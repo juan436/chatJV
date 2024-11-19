@@ -18,6 +18,8 @@ const SelectAvatar = () => {
         if (id) {
             setUserId(id);
             console.log('User ID:', id);
+        } else {
+            console.error('User ID no encontrado');
         }
     }, [searchParams]);
 

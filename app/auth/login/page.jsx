@@ -18,16 +18,15 @@ function LoginPage() {
                 method: 'POST',
                 data: form
             });
-
+    
             if (!data.message) throw new Error('Error durante el proceso, vuelva a intentarlo');
-
+    
             console.log(data.message);
             msgMostrar(data.message, 'success');
-
-            //token en localStorage
+    
             localStorage.setItem('authToken', data.token);
             
-            router.push('/');
+            router.replace('/dashboard');
         } catch (error) {
             const errorMessage = error.response?.data?.message || error.message || 'Error durante el proceso, vuelva a intentarlo';
             console.error('Error en la solicitud:', errorMessage);

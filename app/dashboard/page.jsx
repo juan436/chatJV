@@ -2,18 +2,18 @@
 import React, { useEffect, useState } from 'react';
 import jwt from 'jsonwebtoken';
 import Header from '@/components/layout/Header';
+import { useRouter } from 'next/navigation';
 
-function HomePage() {
+function DashboardPage() {
   const [avatarId, setAvatarId] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    document.title = "JVS";
-}, []);
+  const router = useRouter();
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
-    if (token) {
+    if (!token) {
+      router.replace('/auth/login');
+    } else {
       try {
         const decoded = jwt.decode(token);
         setAvatarId(decoded.avatarId);
@@ -22,11 +22,24 @@ function HomePage() {
       }
     }
     setLoading(false);
-  }, []);
+  }, [router]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      router.replace('/dashboard');
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     setAvatarId(null);
+    router.replace('/auth/login');
   };
 
   if (loading) {
@@ -37,15 +50,10 @@ function HomePage() {
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
       <Header avatarId={avatarId} handleLogout={handleLogout} />
       <main className="flex flex-1 justify-center items-center">
-        {!avatarId && (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold">Bienvenidos a JCV</h2>
-            <p className="mt-4">Por favor, regístrate o inicia sesión para continuar.</p>
-          </div>
-        )}
+        <h2 className="text-2xl font-bold">Page Admin</h2>
       </main>
     </div>
   );
 }
 
-export default HomePage;
+export default DashboardPage;

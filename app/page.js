@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import jwt from 'jsonwebtoken';
+import Avatar from 'avataaars';
 
 function HomePage() {
-  const [username, setUsername] = useState(null);
+  const [avatarId, setAvatarId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -12,7 +13,7 @@ function HomePage() {
     if (token) {
       try {
         const decoded = jwt.decode(token);
-        setUsername(decoded.username);
+        setAvatarId(decoded.avatarId); // Asegúrate de que el token contenga avatarId
       } catch (error) {
         console.error('Error al decodificar el token:', error);
       }
@@ -22,7 +23,7 @@ function HomePage() {
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
-    setUsername(null);
+    setAvatarId(null);
   };
 
   if (loading) {
@@ -31,13 +32,17 @@ function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
-      <header className="flex justify-between Witems-center p-4 bg-gray-900">
+      <header className="flex justify-between items-center p-4 bg-gray-900">
         <h1 className="text-xl font-bold">JCV*</h1>
-        <nav>
-          {username ? (
+        <nav className="flex items-center">
+          {avatarId ? (
             <>
-              <span className="mr-4">Bienvenido, {username}</span>
-              <button onClick={handleLogout} className="text-blue-400 hover:text-blue-300">
+              <Avatar
+                style={{ width: '40px', height: '40px' }}
+                avatarStyle='Circle'
+                {...avatarId} // Asegúrate de que avatarId contenga las propiedades necesarias
+              />
+              <button onClick={handleLogout} className="ml-4 text-blue-400 hover:text-blue-300">
                 Cerrar Sesión
               </button>
             </>
@@ -55,7 +60,7 @@ function HomePage() {
       </header>
       <main className="flex flex-1 justify-center items-center">
         <h2 className="text-2xl font-bold">
-          {username ? 'Page Admin' : 'Bienvenidos a JCV'}
+          {avatarId ? 'Page Admin' : 'Bienvenidos a JCV'}
         </h2>
       </main>
     </div>

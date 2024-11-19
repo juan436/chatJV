@@ -13,8 +13,10 @@
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^6.1.4",
     "@mui/material": "^6.1.7",
+    "avataaars": "^2.0.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
+    "core-js-pure": "^3.39.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.2",
     "next": "14.1.4",
@@ -22,6 +24,7 @@
     "nodemailer": "^6.9.15",
     "notistack": "^3.0.1",
     "react": "^18.3.1",
+    "react-avatar": "^5.0.3",
     "react-dom": "^18",
     "react-hook-form": "^7.53.0",
     "swr": "^2.2.5"

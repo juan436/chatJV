@@ -6,7 +6,6 @@ import sendVerificationEmail from '@/utils/sendVerificationEmail';
 export async function POST(req) {
     const { username, email, password } = await req.json();
     await db.connect();
-
     try {
         // Verificar si el correo electrónico ya existe
         const existingEmail = await User.findOne({ email });
@@ -45,6 +44,7 @@ export async function POST(req) {
 
         return new Response(JSON.stringify({ 
             message: 'Usuario creado exitosamente. Verifica tu correo electrónico.', 
+            userId: user._id,
             variant: 'success' 
         }), {
             status: 200,

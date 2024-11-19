@@ -1,8 +1,10 @@
+import { useRouter } from 'next/navigation';
 import asApi from '@/apiAxios/asApi';
 import { useSnackMessages } from '@/hooks/useSnackMessage';
 
 const useSubmit = (reset) => {
     const { msgMostrar } = useSnackMessages();
+    const router = useRouter();
 
     const onSubmit = async (form) => {
         console.log('Formulario enviado:', form);
@@ -18,11 +20,13 @@ const useSubmit = (reset) => {
         try {
             const { data } = await asApi.post('/auth/signup', userData); 
 
-            if (!data.message) throw new Error('Error durante el proceso, vuelva a intentarlo');
+            if (!data.message || !data.userId) throw new Error('Error durante el proceso, vuelva a intentarlo');
 
             console.log(data.message);
             msgMostrar(data.message, 'success');
             reset();
+            console.log("data.userId", data.userId)
+            router.push(`/auth/select-avatar?userId=${data.userId}`);
         } catch (error) {
             const errorMessage = error.response?.data?.message || error.message || 'Error durante el proceso, vuelva a intentarlo';
             console.error('Error en la solicitud:', errorMessage);

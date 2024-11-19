@@ -25,6 +25,8 @@ function DashboardPage() {
   }, [router]);
 
   useEffect(() => {
+    window.history.replaceState(null, '', '/dashboard');
+
     const handlePopState = () => {
       router.replace('/dashboard');
     };

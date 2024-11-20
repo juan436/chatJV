@@ -2,14 +2,16 @@
 import React, { useEffect, useState } from 'react';
 import jwt from 'jsonwebtoken';
 import Header from '@/components/layout/Header';
+import { useRouter } from 'next/navigation';
 
 function HomePage() {
   const [avatarId, setAvatarId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     document.title = "JVS";
-}, []);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -17,12 +19,13 @@ function HomePage() {
       try {
         const decoded = jwt.decode(token);
         setAvatarId(decoded.avatarId);
+        router.replace('/dashboard'); // Redirige al dashboard si hay sesión activa
       } catch (error) {
         console.error('Error al decodificar el token:', error);
       }
     }
     setLoading(false);
-  }, []);
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');

@@ -19,7 +19,7 @@ function HomePage() {
       try {
         const decoded = jwt.decode(token);
         setAvatarId(decoded.avatarId);
-        router.replace('/dashboard'); // Redirige al dashboard si hay sesión activa
+        router.replace('/dashboard');
       } catch (error) {
         console.error('Error al decodificar el token:', error);
       }

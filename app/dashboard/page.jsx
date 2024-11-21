@@ -21,7 +21,7 @@ function DashboardPage() {
   const [activeUsers, setActiveUsers] = useState([]);
   const [connectedUserIds, setConnectedUserIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const usersPerPage = 5;
+  const usersPerPage = 10;
   const router = useRouter();
 
   
@@ -91,9 +91,15 @@ useEffect(() => {
     router.replace('/auth/login');
   };
 
+  const sortedUsers = activeUsers.sort((a, b) => {
+    const aConnected = connectedUserIds.includes(a._id);
+    const bConnected = connectedUserIds.includes(b._id);
+    return bConnected - aConnected; // Los conectados primero
+  });
+  
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = activeUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const currentUsers = sortedUsers.slice(indexOfFirstUser, indexOfLastUser);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -105,8 +111,8 @@ useEffect(() => {
 
   return (
     <div className="flex min-h-screen bg-gray-800 text-white">
-      <div className="w-1/5 bg-gray-900 p-4">
-        <h2 className="text-xl font-bold mb-4">Contactos</h2>
+      <div className="w-1/6 bg-gray-900 p-4">
+        <h2 className="text-xl font-bold mb-4 mt-18">Contactos</h2> {/* Ajusta el margen superior aquí */}
         {currentUsers.map(user => (
           <div
             key={user._id}

@@ -7,10 +7,9 @@ export async function GET(req) {
     try {
         const { searchParams } = new URL(req.url);
         const userId = searchParams.get('id');
+        const query = userId ? { _id: { $ne: userId } } : {};
 
-        console.log("a ver que hay aqui ",userId);
-        // Encuentra todos los usuarios excepto el que coincide con el ID proporcionado
-        const users = await User.find({ _id: { $ne: userId } }).select([
+        const users = await User.find(query).select([
             "email",
             "username",
             "avatar",

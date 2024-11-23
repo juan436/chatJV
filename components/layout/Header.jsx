@@ -2,15 +2,16 @@ import React from 'react';
 import Avatar from 'avataaars';
 import Link from 'next/link';
 
-const Header = ({ avatar, handleLogout }) => {
+const Header = ({ avatar, userName, handleLogout }) => {
   return (
     <header className="flex justify-between items-center p-4 bg-gray-900">
       <nav className="flex items-center">
-          <h1 className="text-xl font-bold">JCV*</h1>
+        <h1 className="text-xl font-bold">JCV*</h1>
       </nav>
       <div className="flex items-center">
         {avatar ? (
           <>
+            <span className="mr-2 text-white">{userName}</span> {/* Mostrar el nombre del usuario */}
             <Avatar
               style={{ width: '40px', height: '40px' }}
               avatarStyle='Circle'

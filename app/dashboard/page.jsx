@@ -25,11 +25,29 @@ function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
-  const usersPerPage = 10;
   const router = useRouter();
   const socketRef = useRef(null);
   const [userId, setUserId] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  const [usersPerPage, setUsersPerPage] = useState(10);
+  const [unreadMessages, setUnreadMessages] = useState({});
+
+  // Detectar el tamaño de la pantalla y ajustar el número de usuarios por página
+  useEffect(() => {
+    const updateUsersPerPage = () => {
+      if (window.innerWidth < 640) {
+        setUsersPerPage(7);
+      } else {
+        setUsersPerPage(10);
+      }
+    };
+
+    updateUsersPerPage();
+    window.addEventListener('resize', updateUsersPerPage);
+    return () => window.removeEventListener('resize', updateUsersPerPage);
+  }, []);
 
   // Prevent back button
   useEffect(() => {
@@ -54,8 +72,18 @@ function DashboardPage() {
   const handleUserSelect = (user) => {
     setSelectedUser(user);
     fetchMessages(user._id);
+    setIsChatOpen(true);
+    // Restablecer el conteo de mensajes no leídos para el usuario seleccionado
+    setUnreadMessages((prevUnread) => ({
+      ...prevUnread,
+      [user._id]: 0,
+    }));
   };
 
+  const handleCloseChat = () => {
+    setSelectedUser(null);
+    setIsChatOpen(false);
+  };
   //  get active users
   const fetchActiveUsers = async (userId) => {
     try {
@@ -115,31 +143,53 @@ function DashboardPage() {
           setLoading(false);
         });
 
-        socketRef.current = new WebSocket('ws://localhost:8080');
-
-        socketRef.current.addEventListener('open', () => {
-          socketRef.current.send(JSON.stringify({ type: 'connect', userId: decoded.userId }));
-        });
-
-        socketRef.current.addEventListener('message', (event) => {
-          const data = JSON.parse(event.data);
-          console.log('Mensaje recibido:', data);
-          if (data.type === 'activeUsers') {
-            setConnectedUserIds(data.activeUserIds);
-          } else if (data.type === 'message') {
-            if ((data.senderId === userId && data.receiverId === selectedUser._id) ||
-              (data.senderId === selectedUser._id && data.receiverId === userId)) {
-              setMessages((prevMessages) => [...prevMessages, { sender: data.senderId, text: data.text }]);
-            }
+        const connectWebSocket = () => {
+          if (socketRef.current && socketRef.current.readyState !== WebSocket.CLOSED) {
+            return; // Evita reconectar si la conexión ya está abierta o en proceso de cierre
           }
-        });
 
-        socketRef.current.addEventListener('error', (error) => {
-          console.error('WebSocket error:', error);
-        });
+          socketRef.current = new WebSocket('ws://localhost:8080');
+
+          socketRef.current.addEventListener('open', () => {
+            socketRef.current.send(JSON.stringify({ type: 'connect', userId: decoded.userId }));
+            console.log('Conexión WebSocket abierta');
+          });
+
+          socketRef.current.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Mensaje recibido:', data);
+            if (data.type === 'activeUsers') {
+              setConnectedUserIds(data.activeUserIds);
+            } else if (data.type === 'message') {
+              if ((data.senderId === userId && data.receiverId === selectedUser?._id) ||
+                (data.senderId === selectedUser?._id && data.receiverId === userId)) {
+                setMessages((prevMessages) => [...prevMessages, { sender: data.senderId, text: data.text }]);
+              } else {
+                // Incrementar el conteo de mensajes no leídos
+                setUnreadMessages((prevUnread) => ({
+                  ...prevUnread,
+                  [data.senderId]: (prevUnread[data.senderId] || 0) + 1,
+                }));
+              }
+            }
+          });
+
+          socketRef.current.addEventListener('close', () => {
+            console.log('Conexión WebSocket cerrada, intentando reconectar...');
+            setTimeout(connectWebSocket, 5000); // Intenta reconectar cada 5 segundos
+          });
+
+          socketRef.current.addEventListener('error', (error) => {
+            console.error('WebSocket error:', error);
+          });
+        };
+
+        connectWebSocket();
 
         return () => {
-          socketRef.current.close();
+          if (socketRef.current) {
+            socketRef.current.close();
+          }
         };
       } catch (error) {
         console.error('Error al decodificar el token:', error);
@@ -147,6 +197,8 @@ function DashboardPage() {
       }
     }
   }, [router, selectedUser, userId]);
+
+
 
   const sortedUsers = activeUsers.sort((a, b) => {
     const aConnected = connectedUserIds.includes(a._id);
@@ -165,28 +217,36 @@ function DashboardPage() {
   }
 
   const userAvatar = avatarMap[avatarId];
+  const userName = getUserNameById(userId);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
-      <Header avatar={userAvatar} handleLogout={handleLogout} />
-      <div className="flex flex-1">
-        <div style={{ backgroundColor: '#00325b' }} className="w-1/6 p-4 pt-5">
-          <h2 className="text-xl font-bold mb-4 mt-18">Contactos</h2>
-          {currentUsers.map(user => (
-            <div
-              key={user._id}
-              className="flex items-center p-2 cursor-pointer hover:bg-gray-600"
-              onClick={() => handleUserSelect(user)}
-            >
-              <Avatar
-                style={{ width: '40px', height: '40px' }}
-                avatarStyle='Circle'
-                {...avatarMap[user.avatar]}
-              />
-              <span className="ml-2">{user.username}</span>
-              {connectedUserIds.includes(user._id) && <span className="ml-2 text-green-500">●</span>}
-            </div>
-          ))}
+      <Header avatar={userAvatar} userName={userName} handleLogout={handleLogout} />
+      <div className="flex flex-1 h-screen">
+        <div className={`p-4 mt-0 pt-8 sm:pt-8 sm:mt-0 bg-[#00325b] flex flex-col justify-start items-center w-full md:w-1/5 ${isChatOpen ? 'hidden' : 'block'} md:block`}>
+          <h2 className="text-2xl font-bold mb-4 text-center">Lista de Contactos</h2>
+          <div className="flex flex-col items-center justify-center space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 150px)' }}>
+            {currentUsers.map(user => (
+              <div
+                key={user._id}
+                className="flex items-center p-2 cursor-pointer hover:bg-gray-600 w-full max-w-xs rounded-lg transition duration-300"
+                onClick={() => handleUserSelect(user)}
+              >
+                <Avatar
+                  style={{ width: '40px', height: '40px' }}
+                  avatarStyle='Circle'
+                  {...avatarMap[user.avatar]}
+                />
+                <span className="ml-3">{user.username}</span>
+                {connectedUserIds.includes(user._id) && <span className="ml-2 text-green-500">●</span>}
+                {unreadMessages[user._id] > 0 && (
+                  <span className="ml-2 bg-red-500 text-white rounded-full px-2 py-1 text-xs">
+                    {unreadMessages[user._id]}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
           <div className="flex justify-center mt-4">
             {Array.from({ length: Math.ceil(activeUsers.length / usersPerPage) }, (_, i) => (
               <button
@@ -199,20 +259,22 @@ function DashboardPage() {
             ))}
           </div>
         </div>
-        <div className="flex-1 flex flex-col">
-          <main className="flex flex-1">
+        <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
+          <main className="flex flex-1 w-full h-full bg-gray-800">
             {selectedUser ? (
               <Chat
                 selectedUser={selectedUser}
+                setSelectedUser={setSelectedUser}
                 messages={messages}
                 setMessages={setMessages}
                 userId={userId}
                 socketRef={socketRef}
                 getUserNameById={getUserNameById}
+                handleCloseChat={handleCloseChat}
               />
             ) : (
-              <div className="flex justify-center items-center flex-1">
-                <h2 className="text-2xl font-bold">Selecciona un contacto para chatear</h2>
+              <div className="flex justify-center items-center w-full h-full">
+                <p className="text-center">Seleccione un contacto para chatear</p>
               </div>
             )}
           </main>
@@ -221,5 +283,4 @@ function DashboardPage() {
     </div>
   );
 }
-
-export default DashboardPage;
+  export default DashboardPage;

@@ -127,67 +127,122 @@ function DashboardPage() {
 
   const userAvatar = avatarMap[avatarId];
 
-  return (
-    <div className="flex flex-col min-h-screen bg-gray-800 text-white">
-      <Header avatar={userAvatar} userName={username} handleLogout={handleLogout} />
-      <div className="flex flex-1 h-screen">
-        <div className={`p-4 mt-0 pt-8 sm:pt-8 sm:mt-0 bg-[#00325b] flex flex-col justify-start items-center w-full md:w-1/5 ${isChatOpen ? 'hidden' : 'block'} md:block`}>
-          <h2 className="text-2xl font-bold mb-4 text-center">Lista de Contactos</h2>
-          <div className="flex flex-col items-center justify-center space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 150px)' }}>
-            {currentUsers.map(user => (
-              <div
-                key={user._id}
-                className="flex items-center p-2 cursor-pointer hover:bg-gray-600 w-full max-w-xs rounded-lg transition duration-300"
-                onClick={() => handleUserSelect(user)}
-              >
-                <Avatar
-                  style={{ width: '40px', height: '40px' }}
-                  avatarStyle='Circle'
-                  {...avatarMap[user.avatar]}
-                />
-                <span className="ml-3">{user.username}</span>
-                {unreadMessages[user._id] > 0 && (
-                  <span className="ml-2 bg-red-500 text-white rounded-full px-2 py-1 text-xs">
-                    {unreadMessages[user._id]}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-center mt-4">
-            {Array.from({ length: Math.ceil(connectedUsers.length / usersPerPage) }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => paginate(i + 1)}
-                className={`px-2 py-1 mx-1 ${currentPage === i + 1 ? 'bg-blue-500' : 'bg-gray-600'} text-white rounded`}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
-          <main className="flex flex-1 w-full h-full bg-gray-800">
-            {selectedUser ? (
-              <Chat
-                selectedUser={selectedUser}
-                setSelectedUser={setSelectedUser}
-                messages={messages}
-                setMessages={setMessages}
-                userId={userId}
-                socketRef={socketRef}
-                handleCloseChat={handleCloseChat}
+
+
+  const exampleUsers = [
+    {
+      _id: '1',
+      username: 'Juancho',
+      avatar: 'avatar1',
+      lastMessage: 'Hola tal cosa tal cosa tal cosa',
+      time: '09:00',
+      unreadCount: 2,
+    },
+    {
+      _id: '2',
+      username: 'Maria',
+      avatar: 'avatar2',
+      lastMessage: '¿Cómo estás?',
+      time: '09:15',
+      unreadCount: 1,
+    },
+    {
+      _id: '3',
+      username: 'Carlos',
+      avatar: 'avatar3',
+      lastMessage: 'Nos vemos mañana',
+      time: '10:30',
+      unreadCount: 0,
+    },
+    {
+      _id: '4',
+      username: 'Ana',
+      avatar: 'avatar4',
+      lastMessage: '¡Feliz cumpleaños!',
+      time: '11:45',
+      unreadCount: 3,
+    },
+    {
+      _id: '5',
+      username: 'Luis',
+      avatar: 'avatar5',
+      lastMessage: '¿Qué tal el proyecto?',
+      time: '12:00',
+      unreadCount: 0,
+    },
+    {
+      _id: '6',
+      username: 'Sofia',
+      avatar: 'avatar6',
+      lastMessage: 'Llámame cuando puedas',
+      time: '13:20',
+      unreadCount: 5,
+    },
+  ];
+
+const truncateMessage = (message, maxLength) => {
+  return message.length > maxLength ? message.substring(0, maxLength) + '...' : message;
+};
+
+return (
+  <div className="flex flex-col min-h-screen bg-gray-800 text-white">
+    <Header avatar={userAvatar} userName={username} handleLogout={handleLogout} />
+    <div className="flex flex-1 h-screen">
+      <div className={`p-2 sm:p-4 mt-0 pt-8 sm:pt-8 sm:mt-0 bg-[#00325b] flex flex-col justify-start items-center w-full md:w-1/6 ${isChatOpen ? 'hidden' : 'block'} md:block`}>
+        <h2 className="text-2xl font-bold mb-4 text-center">Lista de Contactos</h2>
+        <div className="flex flex-col items-center justify-center space-y-2 overflow-y-auto w-full" style={{ maxHeight: 'calc(100vh - 150px)' }}>
+          {exampleUsers.map(user => (
+            <div
+              key={user._id}
+              className="flex items-center p-2 cursor-pointer hover:bg-gray-600 w-full rounded-lg transition duration-300"
+              onClick={() => handleUserSelect(user)}
+            >
+              <Avatar
+                style={{ width: '40px', height: '40px' }}
+                avatarStyle='Circle'
+                {...avatarMap[user.avatar]}
               />
-            ) : (
-              <div className="flex justify-center items-center w-full h-full">
-                <p className="text-center">Seleccione un contacto para chatear</p>
+              <div className="ml-3 flex-1">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold">{user.username}</span>
+                  {user.unreadCount > 0 && (
+                    <span className="ml-2 bg-red-500 text-white rounded-full px-2 py-1 text-xs">
+                      {user.unreadCount}
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-400 text-sm">{truncateMessage(user.lastMessage, 25)}</p>
+                  <span className="text-gray-400 text-xs ml-4">{user.time}</span>
+                </div>
               </div>
-            )}
-          </main>
+            </div>
+          ))}
         </div>
+        {/* Paginación si es necesario */}
+      </div>
+      <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
+        <main className="flex flex-1 w-full h-full bg-gray-800">
+          {selectedUser ? (
+            <Chat
+              selectedUser={selectedUser}
+              setSelectedUser={setSelectedUser}
+              messages={messages}
+              setMessages={setMessages}
+              userId={userId}
+              socketRef={socketRef}
+              handleCloseChat={handleCloseChat}
+            />
+          ) : (
+            <div className="flex justify-center items-center w-full h-full">
+              <p className="text-center">Seleccione un contacto para chatear</p>
+            </div>
+          )}
+        </main>
       </div>
     </div>
-  );
+  </div>
+);
 }
 
 export default DashboardPage;

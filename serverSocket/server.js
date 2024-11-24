@@ -1,6 +1,6 @@
 import express from 'express';
-const { createServer } = require('http');
-const { Server } = require('socket.io');
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 const app = express();
 const httpServer = createServer(app);
@@ -21,6 +21,7 @@ io.on('connection', (socket) => {
     });
 
 });
+
 const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
     console.log(`Servidor de Socket.io escuchando en el puerto ${PORT}`);

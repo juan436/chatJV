@@ -62,8 +62,8 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
     };
 
     return (
-        <div className="flex-1 flex flex-col p-4 bg-gray-700 rounded h-[885px]">
-            <div className="flex items-center justify-between mb-4">
+        <div className="flex-1 flex flex-col h-full">
+            <div className="flex items-center justify-between p-4 bg-gray-700">
                 <h2 className="text-xl font-bold">{selectedUser.username}</h2>
                 <button onClick={handleCloseChat} className="text-white text-xl">✖</button>
             </div>
@@ -71,15 +71,14 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                 {messages.map((msg, index) => (
                     <div
                         key={index}
-                        className={`mb-2 p-2 rounded-lg max-w-xs ${msg.sender === userId ? 'bg-gray-600 text-white mr-auto' : 'bg-blue-500 text-white ml-auto'
-                            }`} // Cambia las clases aquí
+                        className={`mb-2 p-2 rounded-lg max-w-xs ${msg.sender === userId ? 'bg-gray-600 text-white mr-auto' : 'bg-blue-500 text-white ml-auto'}`}
                     >
                         <span className="font-bold">{getUserNameById(msg.sender)}: </span>
                         <span>{msg.message.text}</span>
                     </div>
                 ))}
             </div>
-            <div className="flex items-center mt-2 relative">
+            <div className="flex items-center p-4 bg-gray-700">
                 <button onClick={() => setShowEmojis(!showEmojis)} className="p-2 bg-gray-600 text-white rounded">😊</button>
                 {showEmojis && (
                     <div ref={emojiRef} className="absolute bottom-12 left-0 z-10" style={{ backgroundColor: '#f0f0f0' }}>

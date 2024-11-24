@@ -3,9 +3,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import jwt from 'jsonwebtoken';
 import Header from '@/components/layout/Header';
 import { useRouter } from 'next/navigation';
-import asApi from '@/apiAxios/asApi';
 import Avatar from 'avataaars';
 import Chat from '@/components/chat/Chat';
+import io from 'socket.io-client';
 
 const avatarMap = {
   avatar1: { id: 'avatar1', topType: 'ShortHairDreads01', accessoriesType: 'Blank', hairColor: 'BrownDark', facialHairType: 'Blank', clotheType: 'Hoodie', clotheColor: 'PastelBlue', eyeType: 'Happy', eyebrowType: 'Default', mouthType: 'Smile', skinColor: 'Light' },
@@ -17,39 +17,69 @@ const avatarMap = {
 };
 
 function DashboardPage() {
-
   const [avatarId, setAvatarId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeUsers, setActiveUsers] = useState([]);
-  const [connectedUserIds, setConnectedUserIds] = useState([]);
+  const [connectedUsers, setConnectedUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const router = useRouter();
   const socketRef = useRef(null);
   const [userId, setUserId] = useState(null);
-  const [allUsers, setAllUsers] = useState([]);
+  const [username, setUsername] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
-
   const [usersPerPage, setUsersPerPage] = useState(10);
   const [unreadMessages, setUnreadMessages] = useState({});
 
-  // Detectar el tamaño de la pantalla y ajustar el número de usuarios por página
   useEffect(() => {
-    const updateUsersPerPage = () => {
-      if (window.innerWidth < 640) {
-        setUsersPerPage(7);
-      } else {
-        setUsersPerPage(10);
-      }
+    const socketInitializer = async () => {
+      socketRef.current = io('http://localhost:4000');
+
+      socketRef.current.on('connect', () => {
+        console.log('Conectado al servidor de Socket.io');
+      });
+
+      socketRef.current.on('disconnect', () => {
+        console.log('Desconectado del servidor de Socket.io');
+      });
+
+      socketRef.current.on('updateUsers', (users) => {
+        setConnectedUsers(users);
+      });
+
+      // Aquí puedes manejar otros eventos
     };
 
-    updateUsersPerPage();
-    window.addEventListener('resize', updateUsersPerPage);
-    return () => window.removeEventListener('resize', updateUsersPerPage);
+    socketInitializer();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
 
-  // Prevent back button
+
+  // useEffect para verificar si el usuario está autenticado
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      router.replace('/auth/login');
+    } else {
+      try {
+        const decoded = jwt.decode(token);
+        setAvatarId(decoded.avatarId);
+        setUserId(decoded.userId);
+        setUsername(decoded.username);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+        setLoading(false);
+      }
+    }
+  }, [router]);
+
+  // useEffect para evitar que el usuario vuelva a la pagina de login al volver con el boton de atras del navegador
   useEffect(() => {
     window.history.pushState(null, '', window.location.pathname);
     const handlePopState = () => {
@@ -61,154 +91,33 @@ function DashboardPage() {
     };
   }, [router]);
 
-  // Logout
+  // funcion para cerrar la sesion
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     setAvatarId(null);
     router.replace('/auth/login');
   }
 
-  // Select user
+  // funcion para seleccionar un usuario y abrir el chat
   const handleUserSelect = (user) => {
     setSelectedUser(user);
-    fetchMessages(user._id);
     setIsChatOpen(true);
-    // Restablecer el conteo de mensajes no leídos para el usuario seleccionado
     setUnreadMessages((prevUnread) => ({
       ...prevUnread,
       [user._id]: 0,
     }));
   };
 
+  // funcion para cerrar el chat
   const handleCloseChat = () => {
     setSelectedUser(null);
     setIsChatOpen(false);
   };
-  //  get active users
-  const fetchActiveUsers = async (userId) => {
-    try {
-      const response = await asApi.get(`/users?id=${userId}`);
-      setActiveUsers(response.data);
-    } catch (error) {
-      console.error('Error al obtener usuarios activos:', error);
-    }
-  };
 
-  // get all users
-  const fetchAllUsers = async () => {
-    try {
-      const response = await asApi.get('/users');
-      const users = response.data.map(user => ({ id: user._id, name: user.username }));
-      setAllUsers(users);
-    } catch (error) {
-      console.error('Error al obtener todos los usuarios:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchAllUsers();
-  }, []);
-
-  // get user name by id
-  const getUserNameById = (id) => {
-    const user = allUsers.find(user => user.id === id);
-    return user ? user.name : 'Desconocido';
-  };
-
-  // Obtener mensajes
-  const fetchMessages = async (selectedUserId) => {
-    try {
-      const response = await asApi.get(`/chat?userId=${userId}`);
-      console.log('Datos recibidos:', response.data); // Verifica los datos recibidos
-      const filteredMessages = response.data.filter(
-        msg => msg.users.includes(userId) && msg.users.includes(selectedUserId)
-      );
-      setMessages(filteredMessages);
-    } catch (error) {
-      console.error('Error al obtener mensajes:', error);
-    }
-  };
-
-  // configuration to connect with websocket
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      router.replace('/auth/login');
-    } else {
-      try {
-        const decoded = jwt.decode(token);
-        setAvatarId(decoded.avatarId);
-        setUserId(decoded.userId);
-        fetchActiveUsers(decoded.userId).then(() => {
-          setLoading(false);
-        });
-
-        const connectWebSocket = () => {
-          if (socketRef.current && socketRef.current.readyState !== WebSocket.CLOSED) {
-            return; // Evita reconectar si la conexión ya está abierta o en proceso de cierre
-          }
-
-          socketRef.current = new WebSocket('ws://localhost:8080');
-
-          socketRef.current.addEventListener('open', () => {
-            socketRef.current.send(JSON.stringify({ type: 'connect', userId: decoded.userId }));
-            console.log('Conexión WebSocket abierta');
-          });
-
-          socketRef.current.addEventListener('message', (event) => {
-            const data = JSON.parse(event.data);
-            console.log('Mensaje recibido:', data);
-            if (data.type === 'activeUsers') {
-              setConnectedUserIds(data.activeUserIds);
-            } else if (data.type === 'message') {
-              if ((data.senderId === userId && data.receiverId === selectedUser?._id) ||
-                (data.senderId === selectedUser?._id && data.receiverId === userId)) {
-                setMessages((prevMessages) => [...prevMessages, { sender: data.senderId, text: data.text }]);
-              } else {
-                // Incrementar el conteo de mensajes no leídos
-                setUnreadMessages((prevUnread) => ({
-                  ...prevUnread,
-                  [data.senderId]: (prevUnread[data.senderId] || 0) + 1,
-                }));
-              }
-            }
-          });
-
-          socketRef.current.addEventListener('close', () => {
-            console.log('Conexión WebSocket cerrada, intentando reconectar...');
-            setTimeout(connectWebSocket, 5000); // Intenta reconectar cada 5 segundos
-          });
-
-          socketRef.current.addEventListener('error', (error) => {
-            console.error('WebSocket error:', error);
-          });
-        };
-
-        connectWebSocket();
-
-        return () => {
-          if (socketRef.current) {
-            socketRef.current.close();
-          }
-        };
-      } catch (error) {
-        console.error('Error al decodificar el token:', error);
-        setLoading(false);
-      }
-    }
-  }, [router, selectedUser, userId]);
-
-
-
-  const sortedUsers = activeUsers.sort((a, b) => {
-    const aConnected = connectedUserIds.includes(a._id);
-    const bConnected = connectedUserIds.includes(b._id);
-    return bConnected - aConnected;
-  });
-
+  // funcion para paginar los usuarios
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = sortedUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const currentUsers = connectedUsers.slice(indexOfFirstUser, indexOfLastUser);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -217,11 +126,10 @@ function DashboardPage() {
   }
 
   const userAvatar = avatarMap[avatarId];
-  const userName = getUserNameById(userId);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
-      <Header avatar={userAvatar} userName={userName} handleLogout={handleLogout} />
+      <Header avatar={userAvatar} userName={username} handleLogout={handleLogout} />
       <div className="flex flex-1 h-screen">
         <div className={`p-4 mt-0 pt-8 sm:pt-8 sm:mt-0 bg-[#00325b] flex flex-col justify-start items-center w-full md:w-1/5 ${isChatOpen ? 'hidden' : 'block'} md:block`}>
           <h2 className="text-2xl font-bold mb-4 text-center">Lista de Contactos</h2>
@@ -238,7 +146,6 @@ function DashboardPage() {
                   {...avatarMap[user.avatar]}
                 />
                 <span className="ml-3">{user.username}</span>
-                {connectedUserIds.includes(user._id) && <span className="ml-2 text-green-500">●</span>}
                 {unreadMessages[user._id] > 0 && (
                   <span className="ml-2 bg-red-500 text-white rounded-full px-2 py-1 text-xs">
                     {unreadMessages[user._id]}
@@ -248,7 +155,7 @@ function DashboardPage() {
             ))}
           </div>
           <div className="flex justify-center mt-4">
-            {Array.from({ length: Math.ceil(activeUsers.length / usersPerPage) }, (_, i) => (
+            {Array.from({ length: Math.ceil(connectedUsers.length / usersPerPage) }, (_, i) => (
               <button
                 key={i}
                 onClick={() => paginate(i + 1)}
@@ -269,7 +176,6 @@ function DashboardPage() {
                 setMessages={setMessages}
                 userId={userId}
                 socketRef={socketRef}
-                getUserNameById={getUserNameById}
                 handleCloseChat={handleCloseChat}
               />
             ) : (
@@ -283,4 +189,5 @@ function DashboardPage() {
     </div>
   );
 }
-  export default DashboardPage;
+
+export default DashboardPage;

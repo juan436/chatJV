@@ -34,32 +34,31 @@ function DashboardPage() {
   useEffect(() => {
     const socketInitializer = async () => {
       socketRef.current = io('http://localhost:4000');
-
+  
       socketRef.current.on('connect', () => {
         console.log('Conectado al servidor de Socket.io');
+        if (userId && username && avatarId) {
+          socketRef.current.emit('registerUser', { userId, username, avatarId });
+        }
       });
-
-      socketRef.current.on('disconnect', () => {
-        console.log('Desconectado del servidor de Socket.io');
-      });
-
+  
       socketRef.current.on('updateUsers', (users) => {
+        console.log('Usuarios conectados:', users);
         setConnectedUsers(users);
       });
-
-      // Aquí puedes manejar otros eventos
     };
-
+  
     socketInitializer();
-
+  
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
     };
-  }, []);
+  }, [userId, username, avatarId]);
 
 
+  console.log("connectedUsers", connectedUsers);
   // useEffect para verificar si el usuario está autenticado
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -99,13 +98,21 @@ function DashboardPage() {
   }
 
   // funcion para seleccionar un usuario y abrir el chat
-  const handleUserSelect = (user) => {
+  const handleUserSelect = async (user) => {
     setSelectedUser(user);
     setIsChatOpen(true);
     setUnreadMessages((prevUnread) => ({
       ...prevUnread,
       [user._id]: 0,
     }));
+
+    try {
+      const response = await fetch(`/api/chat?userId=${userId}`);
+      const data = await response.json();
+      setMessages(data);
+    } catch (error) {
+      console.error('Error al cargar mensajes:', error);
+    }
   };
 
   // funcion para cerrar el chat
@@ -114,12 +121,6 @@ function DashboardPage() {
     setIsChatOpen(false);
   };
 
-  // funcion para paginar los usuarios
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = connectedUsers.slice(indexOfFirstUser, indexOfLastUser);
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen bg-gray-800 text-white">Cargando...</div>;
@@ -127,7 +128,10 @@ function DashboardPage() {
 
   const userAvatar = avatarMap[avatarId];
 
-
+  const getUserNameById = (id) => {
+    const user = connectedUsers.find(user => user.userId === id);
+    return user ? user.username : 'Desconocido';
+  };
 
   const exampleUsers = [
     {
@@ -180,69 +184,66 @@ function DashboardPage() {
     },
   ];
 
-const truncateMessage = (message, maxLength) => {
-  return message.length > maxLength ? message.substring(0, maxLength) + '...' : message;
-};
+  const truncateMessage = (message, maxLength) => {
+    return message.length > maxLength ? message.substring(0, maxLength) + '...' : message;
+  };
 
-return (
-  <div className="flex flex-col min-h-screen bg-gray-800 text-white">
-    <Header avatar={userAvatar} userName={username} handleLogout={handleLogout} />
-    <div className="flex flex-1 h-screen">
-      <div className={`p-2 sm:p-4 mt-0 pt-8 sm:pt-8 sm:mt-0 bg-[#00325b] flex flex-col justify-start items-center w-full md:w-1/6 ${isChatOpen ? 'hidden' : 'block'} md:block`}>
-        <h2 className="text-2xl font-bold mb-4 text-center">Lista de Contactos</h2>
-        <div className="flex flex-col items-center justify-center space-y-2 overflow-y-auto w-full" style={{ maxHeight: 'calc(100vh - 150px)' }}>
-          {exampleUsers.map(user => (
-            <div
-              key={user._id}
-              className="flex items-center p-2 cursor-pointer hover:bg-gray-600 w-full rounded-lg transition duration-300"
-              onClick={() => handleUserSelect(user)}
-            >
-              <Avatar
-                style={{ width: '40px', height: '40px' }}
-                avatarStyle='Circle'
-                {...avatarMap[user.avatar]}
-              />
-              <div className="ml-3 flex-1">
-                <div className="flex justify-between items-center">
+  
+
+  const filteredUsers = connectedUsers.filter(user => user.userId !== userId);
+
+  console.log('userId:', userId);
+  console.log('connectedUsers:', connectedUsers);
+  console.log('filteredUsers:', filteredUsers);
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-800 text-white">
+      <Header avatar={userAvatar} userName={username} handleLogout={handleLogout} />
+      <div className="flex flex-1 h-screen">
+        <div className={`p-2 sm:p-4 mt-0 pt-8 sm:pt-8 sm:mt-0 bg-[#00325b] flex flex-col justify-start items-center w-full sm:w-1/6 md:w-1/5 ${isChatOpen ? 'hidden' : 'block'} md:block`}>
+          <h2 className="text-2xl font-bold mb-4 text-center">Lista de Contactos</h2>
+          <div className="flex flex-col items-center justify-center space-y-2 overflow-y-auto w-full" style={{ maxHeight: 'calc(100vh - 150px)' }}>
+            {filteredUsers.map(user => (
+              <div
+                key={user.userId}
+                className="flex items-center p-2 cursor-pointer hover:bg-gray-600 w-full rounded-lg transition duration-300"
+                onClick={() => handleUserSelect(user)}
+              >
+                <Avatar
+                  style={{ width: '40px', height: '40px' }}
+                  avatarStyle='Circle'
+                  {...avatarMap[user.avatarId]}
+                />
+                <div className="ml-3 flex-1">
                   <span className="font-bold">{user.username}</span>
-                  {user.unreadCount > 0 && (
-                    <span className="ml-2 bg-red-500 text-white rounded-full px-2 py-1 text-xs">
-                      {user.unreadCount}
-                    </span>
-                  )}
-                </div>
-                <div className="flex justify-between items-center">
-                  <p className="text-gray-400 text-sm">{truncateMessage(user.lastMessage, 25)}</p>
-                  <span className="text-gray-400 text-xs ml-4">{user.time}</span>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-        {/* Paginación si es necesario */}
-      </div>
-      <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
-        <main className="flex flex-1 w-full h-full bg-gray-800">
-          {selectedUser ? (
-            <Chat
-              selectedUser={selectedUser}
-              setSelectedUser={setSelectedUser}
-              messages={messages}
-              setMessages={setMessages}
-              userId={userId}
-              socketRef={socketRef}
-              handleCloseChat={handleCloseChat}
-            />
-          ) : (
-            <div className="flex justify-center items-center w-full h-full">
-              <p className="text-center">Seleccione un contacto para chatear</p>
-            </div>
-          )}
-        </main>
+        <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
+          <main className="flex flex-1 w-full h-full bg-gray-800">
+            {selectedUser ? (
+              <Chat
+                selectedUser={selectedUser}
+                setSelectedUser={setSelectedUser}
+                messages={messages}
+                setMessages={setMessages}
+                userId={userId}
+                socketRef={socketRef}
+                getUserNameById={getUserNameById}
+                handleCloseChat={handleCloseChat}
+              />
+            ) : (
+              <div className="flex justify-center items-center w-full h-full">
+                <p className="text-center">Seleccione un contacto para chatear</p>
+              </div>
+            )}
+          </main>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
 
 export default DashboardPage;

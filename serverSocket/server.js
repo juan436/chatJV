@@ -13,13 +13,35 @@ const io = new Server(httpServer, {
     },
 });
 
+const connectedUsers = {};
+
 io.on('connection', (socket) => {
     console.log('Usuario conectado', socket.id);
 
-    socket.on('disconnect', () => {
-        console.log('Usuario desconectado', socket.id);
+    socket.on('registerUser', ({ userId, username, avatarId }) => {
+        if (userId && username && avatarId) {
+            connectedUsers[userId] = { userId, socketId: socket.id, username, avatarId };
+            io.emit('updateUsers', Object.values(connectedUsers));
+        }
     });
 
+    socket.on('sendMessage', (messageData) => {
+        const { receiverId, text } = messageData;
+        const receiver = connectedUsers[receiverId];
+        if (receiver) {
+            io.to(receiver.socketId).emit('receiveMessage', { senderId: messageData.senderId, text });
+        }
+    });
+
+    socket.on('disconnect', () => {
+        for (const [userId, userInfo] of Object.entries(connectedUsers)) {
+            if (userInfo.socketId === socket.id) {
+                delete connectedUsers[userId];
+                break;
+            }
+        }
+        io.emit('updateUsers', Object.values(connectedUsers));
+    });
 });
 
 const PORT = process.env.PORT || 4000;

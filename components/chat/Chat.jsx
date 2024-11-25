@@ -21,6 +21,21 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
         };
     }, []);
 
+    useEffect(() => {
+        if (socketRef.current) {
+            const handleReceiveMessage = (message) => {
+                setMessages((prevMessages) => [...prevMessages, { sender: message.senderId, message: { text: message.text } }]);
+            };
+ 
+            socketRef.current.on('receiveMessage', handleReceiveMessage);
+ 
+            // Limpia el listener al desmontar
+            return () => {
+                socketRef.current.off('receiveMessage', handleReceiveMessage);
+            };
+        }
+    }, [socketRef, setMessages]);
+
     const handleEmojiClick = (emoji) => {
         setNewMessage(newMessage + emoji.native);
     };
@@ -28,29 +43,23 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
     const handleSendMessage = async () => {
         if (newMessage.trim() && selectedUser) {
             const messageData = {
-                type: 'message',
                 senderId: userId,
-                receiverId: selectedUser._id,
+                receiverId: selectedUser.userId,
                 text: newMessage,
             };
 
-            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                socketRef.current.send(JSON.stringify(messageData));
-            } else {
-                console.error('WebSocket no está conectado');
+            if (socketRef.current) {
+                socketRef.current.emit('sendMessage', messageData);
             }
 
             // Guardar el mensaje en la base de datos
             try {
                 const response = await asApi.post('/chat', {
                     from: userId,
-                    to: selectedUser._id,
+                    to: selectedUser.userId,
                     text: newMessage,
                 });
                 console.log('Respuesta de la API:', response);
-                if (response.status !== 200) {
-                    console.error('Error al guardar el mensaje en la base de datos');
-                }
             } catch (error) {
                 console.error('Error al guardar el mensaje:', error);
             }
@@ -67,7 +76,7 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                 <h2 className="text-xl font-bold">{selectedUser.username}</h2>
                 <button onClick={handleCloseChat} className="text-white text-xl">✖</button>
             </div>
-            <div className="flex-1 overflow-y-auto bg-gray-800 p-2 rounded custom-scrollbar">
+            <div className="flex-1 overflow-y-auto bg-gray-800 p-2 rounded custom-scrollbar" style={{ maxHeight: 'calc(99.5vh - 200px)', overflowY: 'auto' }}>
                 {messages.map((msg, index) => (
                     <div
                         key={index}

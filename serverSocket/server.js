@@ -20,23 +20,23 @@ io.on('connection', (socket) => {
 
     socket.on('registerUser', ({ userId, username, avatarId }) => {
         if (userId && username && avatarId) {
-            connectedUsers[userId] = { userId, socketId: socket.id, username, avatarId };
+            connectedUsers[userId] = { userId, socketId: socket.id, username, avatarId, isConnected: true };
             io.emit('updateUsers', Object.values(connectedUsers));
         }
     });
 
     socket.on('sendMessage', (messageData) => {
-        const { receiverId, text } = messageData;
+        const { receiverId, text, createdAt } = messageData;
         const receiver = connectedUsers[receiverId];
         if (receiver) {
-            io.to(receiver.socketId).emit('receiveMessage', { senderId: messageData.senderId, text });
+            io.to(receiver.socketId).emit('receiveMessage', { senderId: messageData.senderId, text, createdAt });
         }
     });
 
     socket.on('disconnect', () => {
         for (const [userId, userInfo] of Object.entries(connectedUsers)) {
             if (userInfo.socketId === socket.id) {
-                delete connectedUsers[userId];
+                connectedUsers[userId].isConnected = false;
                 break;
             }
         }

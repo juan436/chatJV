@@ -7,6 +7,7 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
     const [newMessage, setNewMessage] = useState('');
     const [showEmojis, setShowEmojis] = useState(false);
     const emojiRef = useRef(null);
+    const messagesEndRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -24,17 +25,23 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
     useEffect(() => {
         if (socketRef.current) {
             const handleReceiveMessage = (message) => {
-                setMessages((prevMessages) => [...prevMessages, { sender: message.senderId, message: { text: message.text } }]);
+                setMessages((prevMessages) => [...prevMessages, { sender: message.senderId, message: { text: message.text }, createdAt: message.createdAt }]);
             };
- 
+    
             socketRef.current.on('receiveMessage', handleReceiveMessage);
- 
-            // Limpia el listener al desmontar
+    
             return () => {
                 socketRef.current.off('receiveMessage', handleReceiveMessage);
             };
         }
     }, [socketRef, setMessages]);
+
+    // Desplaza el scroll al final cuando cambian los mensajes
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]);
 
     const handleEmojiClick = (emoji) => {
         setNewMessage(newMessage + emoji.native);
@@ -46,12 +53,13 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                 senderId: userId,
                 receiverId: selectedUser.userId,
                 text: newMessage,
+                createdAt: new Date().toISOString(), 
             };
-
+    
             if (socketRef.current) {
                 socketRef.current.emit('sendMessage', messageData);
             }
-
+    
             // Guardar el mensaje en la base de datos
             try {
                 const response = await asApi.post('/chat', {
@@ -63,10 +71,17 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
             } catch (error) {
                 console.error('Error al guardar el mensaje:', error);
             }
-
+    
             // Actualizar la lista de mensajes localmente
-            setMessages((prevMessages) => [...prevMessages, { sender: userId, message: { text: newMessage } }]);
+            setMessages((prevMessages) => [...prevMessages, { sender: userId, message: { text: newMessage }, createdAt: messageData.createdAt }]);
             setNewMessage('');
+        }
+    };
+
+
+    const handleKeyPress = (event) => {
+        if (event.key === 'Enter') {
+            handleSendMessage();
         }
     };
 
@@ -84,8 +99,10 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                     >
                         <span className="font-bold">{getUserNameById(msg.sender)}: </span>
                         <span>{msg.message.text}</span>
+                        <span className="block text-xs text-gray-400">{new Date(msg.createdAt).toLocaleTimeString()}</span>
                     </div>
                 ))}
+                <div ref={messagesEndRef} />
             </div>
             <div className="flex items-center p-4 bg-gray-700">
                 <button onClick={() => setShowEmojis(!showEmojis)} className="p-2 bg-gray-600 text-white rounded">😊</button>
@@ -98,6 +115,7 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
                     placeholder="Escribe un mensaje..."
                     className="flex-1 p-2 rounded bg-gray-600 text-white ml-2"
                 />

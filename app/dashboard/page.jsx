@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Chat from '@/components/chat/Chat';
 import io from 'socket.io-client';
 import ContactsSidebar from '@/components/layout/ContactsSidebar';
+import { asApi } from '@/apiAxios';
 
 const avatarMap = {
   avatar1: { id: 'avatar1', topType: 'ShortHairDreads01', accessoriesType: 'Blank', hairColor: 'BrownDark', facialHairType: 'Blank', clotheType: 'Hoodie', clotheColor: 'PastelBlue', eyeType: 'Happy', eyebrowType: 'Default', mouthType: 'Smile', skinColor: 'Light' },
@@ -17,20 +18,42 @@ const avatarMap = {
 };
 
 function DashboardPage() {
-  const [avatarId, setAvatarId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [connectedUsers, setConnectedUsers] = useState([]);
+
   const [currentPage, setCurrentPage] = useState(1);
+
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const router = useRouter();
+
   const socketRef = useRef(null);
+
   const [userId, setUserId] = useState(null);
   const [username, setUsername] = useState('');
+  const [avatarId, setAvatarId] = useState(null);
+
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [usersPerPage, setUsersPerPage] = useState(10);
   const [unreadMessages, setUnreadMessages] = useState({});
 
+  const [confirmedFriends, setConfirmedFriends] = useState([]);
+  const [Allusers, setAllUsers] = useState([]);
+  const [friendRequests, setFriendRequests] = useState([]);
+
+  // useEffect para evitar que el usuario vuelva a la pagina de login al volver con el boton de atras del navegador
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.pathname);
+    const handlePopState = () => {
+      window.location.href = 'https://www.google.com';
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [router]);
+
+  // useEffect para inicializar el socket
   useEffect(() => {
     const socketInitializer = async () => {
       socketRef.current = io('http://localhost:4000');
@@ -58,6 +81,7 @@ function DashboardPage() {
   }, [userId, username, avatarId]);
 
   console.log("connectedUsers", connectedUsers);
+
   // useEffect para verificar si el usuario está autenticado
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -77,17 +101,95 @@ function DashboardPage() {
     }
   }, [router]);
 
-  // useEffect para evitar que el usuario vuelva a la pagina de login al volver con el boton de atras del navegador
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // GET para obtener los amigos confirmados  y todos los usuarios
+
+
+
+  const getConfirmedFriends = async (userId) => {
+    try {
+      const response = await asApi.get(`/friends?senderId=${userId}&isVerified=true`);
+      const confirmedFriends = response.data;
+      setConfirmedFriends(confirmedFriends);
+      console.log('Amigos confirmados:', confirmedFriends);
+    } catch (error) {
+      console.error('Error al obtener amigos confirmados:', error);
+    }
+  };
+
+  const getUsers = async (userId) => {
+    const response = await asApi.get(`/users?id=${userId}`);
+    const data = response.data;
+    setAllUsers(data);
+    console.log('users', data);
+  }
+
+  const getFriendRequests = async (userId) => {
+    try {
+      const response = await asApi.get(`/friends?senderId=${userId}&isVerified=false`);
+      const pendingRequests = response.data;
+      setFriendRequests(pendingRequests);
+      console.log('Solicitudes de amistad pendientes:', pendingRequests);
+    } catch (error) {
+      console.error('Error al obtener solicitudes de amistad pendientes:', error);
+    }
+  };
+
   useEffect(() => {
-    window.history.pushState(null, '', window.location.pathname);
-    const handlePopState = () => {
-      window.location.href = 'https://www.google.com';
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [router]);
+
+    if (userId) {
+      getConfirmedFriends(userId);
+      getUsers(userId);
+      getFriendRequests(userId);
+    }
+  }, [userId]);
+
+  console.log('confirmedFriends', confirmedFriends);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // funcion para cerrar la sesion
   const handleLogout = () => {
@@ -106,8 +208,8 @@ function DashboardPage() {
     }));
 
     try {
-      const response = await fetch(`/api/chat?userId=${userId}`);
-      const data = await response.json();
+      const response = await asApi.get(`/chat?userId=${userId}`);
+      const data = response.data;
       setMessages(data);
     } catch (error) {
       console.error('Error al cargar mensajes:', error);
@@ -136,6 +238,7 @@ function DashboardPage() {
   console.log('userId:', userId);
   console.log('connectedUsers:', connectedUsers);
   console.log('filteredUsers:', filteredUsers);
+
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">

@@ -87,11 +87,11 @@ export async function PATCH(req) {
     await db.connect();
 
     try {
-        const { requestId } = await req.json();
+        const { senderId, receiverId } = await req.json();
 
-        if (!requestId) {
+        if (!senderId || !receiverId) {
             return new Response(JSON.stringify({
-                message: 'ID de la solicitud no proporcionado',
+                message: 'Datos incompletos proporcionados',
                 variant: 'error'
             }), {
                 status: 400,
@@ -99,8 +99,8 @@ export async function PATCH(req) {
             });
         }
 
-        const updatedRequest = await Friends.findByIdAndUpdate(
-            requestId,
+        const updatedRequest = await Friends.findOneAndUpdate(
+            { sender: senderId, receiver: receiverId },
             { isVerified: true },
             { new: true }
         );

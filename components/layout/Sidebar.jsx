@@ -4,9 +4,9 @@ import { FaComments, FaUserPlus, FaSignOutAlt, FaBell } from 'react-icons/fa';
 import AddContactModal from '../modals/AddContactModal';
 import AddNotificationModal from '../modals/AddNotificationModal';
 
-const Sidebar = ({ userInfo, handleLogout, avatarMap, Allusers }) => {
+const Sidebar = ({ userInfo, handleLogout, avatarMap}) => {
 
-  const { avatar, userId, username, socketRef, friendRequests } = userInfo;
+  const { avatar, userId, username, socketRef, friendRequests, setFriendRequests,  Allusers} = userInfo;
 
   console.log('avatar', avatar);
   const [selected, setSelected] = useState('chats');
@@ -32,7 +32,7 @@ const Sidebar = ({ userInfo, handleLogout, avatarMap, Allusers }) => {
     };
   }, []);
 
-  console.log('a ver', avatarMap[avatar]);
+  console.log('friendRequests en sidebar', friendRequests);
   return (
     <div className="flex flex-col justify-between items-center p-0 bg-gray-900 h-screen w-16">
       <div className="flex flex-col items-center w-full mt-10">
@@ -89,6 +89,9 @@ const Sidebar = ({ userInfo, handleLogout, avatarMap, Allusers }) => {
         onClose={() => setShowNotificationsModal(false)}
         requests={friendRequests}
         avatarMap={avatarMap}
+        setFriendRequests={setFriendRequests}
+        Allusers={Allusers}
+        userId={userId}
       />
     </div>
   );

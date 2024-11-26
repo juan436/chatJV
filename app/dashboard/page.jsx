@@ -238,14 +238,16 @@ function DashboardPage() {
     userId: userId,
     username: username,
     socketRef: socketRef,
-    friendRequests: friendRequests
+    friendRequests: friendRequests,
+    setFriendRequests: setFriendRequests,
+    Allusers: Allusers
   };
 
   console.log('friendRequests', friendRequests);
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
       <div className="flex flex-1 h-screen">
-        <Sidebar userInfo={userInfo} handleLogout={handleLogout} avatarMap={avatarMap} Allusers={Allusers} />
+        <Sidebar userInfo={userInfo} handleLogout={handleLogout} avatarMap={avatarMap} />
         <ContactsSidebar contacts={friendsWithStatus} handleUserSelect={handleUserSelect} messages={messages} avatarMap={avatarMap} />
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
           <main className="flex flex-1 w-full h-full bg-gray-800">

@@ -25,6 +25,7 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
     useEffect(() => {
         if (socketRef.current) {
             const handleReceiveMessage = (message) => {
+                console.log('Mensaje recibido:', message);
                 setMessages((prevMessages) => [...prevMessages, { sender: message.senderId, message: { text: message.text }, createdAt: message.createdAt }]);
             };
     
@@ -51,10 +52,12 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
         if (newMessage.trim() && selectedUser) {
             const messageData = {
                 senderId: userId,
-                receiverId: selectedUser.userId,
+                receiverId: selectedUser,
                 text: newMessage,
-                createdAt: new Date().toISOString(), 
+                createdAt: new Date().toISOString(),
             };
+    
+            console.log('Enviando mensaje:', messageData);
     
             if (socketRef.current) {
                 socketRef.current.emit('sendMessage', messageData);
@@ -78,7 +81,6 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
         }
     };
 
-
     const handleKeyPress = (event) => {
         if (event.key === 'Enter') {
             handleSendMessage();
@@ -86,12 +88,12 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full">
-            <div className="flex items-center justify-between p-4 bg-gray-700">
+        <div className="flex-1 flex flex-col h-100">
+            <div className="flex items-center justify-between p-4 bg-gray-900">
                 <h2 className="text-xl font-bold">{selectedUser.username}</h2>
                 <button onClick={handleCloseChat} className="text-white text-xl">✖</button>
             </div>
-            <div className="flex-1 overflow-y-auto bg-gray-800 p-2 rounded custom-scrollbar" style={{ maxHeight: 'calc(99.5vh - 200px)', overflowY: 'auto' }}>
+            <div className="flex-1 overflow-y-auto bg-gray-800 p-2 rounded custom-scrollbar" style={{ maxHeight: 'calc(107vh - 200px)', overflowY: 'auto' }}>
                 {messages.map((msg, index) => (
                     <div
                         key={index}
@@ -104,8 +106,8 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                 ))}
                 <div ref={messagesEndRef} />
             </div>
-            <div className="flex items-center p-4 bg-gray-700">
-                <button onClick={() => setShowEmojis(!showEmojis)} className="p-2 bg-gray-600 text-white rounded">😊</button>
+            <div className="flex items-center p-4 bg-gray-900">
+                <button onClick={() => setShowEmojis(!showEmojis)} className="p-2 bg-gray-700 text-white rounded">😊</button>
                 {showEmojis && (
                     <div ref={emojiRef} className="absolute bottom-12 left-0 z-10" style={{ backgroundColor: '#f0f0f0' }}>
                         <Picker data={data} onEmojiSelect={handleEmojiClick} />
@@ -117,9 +119,9 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Escribe un mensaje..."
-                    className="flex-1 p-2 rounded bg-gray-600 text-white ml-2"
+                    className="flex-1 p-2 rounded bg-gray-700 text-white ml-2"
                 />
-                <button onClick={handleSendMessage} className="ml-2 p-2 bg-blue-500 text-white rounded">Enviar</button>
+                <button onClick={handleSendMessage} className="ml-2 p-2 bg-gray-700 text-white rounded">Enviar</button>
             </div>
         </div>
     );

@@ -1,11 +1,11 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react';
 import jwt from 'jsonwebtoken';
-import Header from '@/components/layout/Header';
+import Sidebar from '@/components/layout/Sidebar';
 import { useRouter } from 'next/navigation';
-import Avatar from 'avataaars';
 import Chat from '@/components/chat/Chat';
 import io from 'socket.io-client';
+import ContactsSidebar from '@/components/layout/ContactsSidebar';
 
 const avatarMap = {
   avatar1: { id: 'avatar1', topType: 'ShortHairDreads01', accessoriesType: 'Blank', hairColor: 'BrownDark', facialHairType: 'Blank', clotheType: 'Hoodie', clotheColor: 'PastelBlue', eyeType: 'Happy', eyebrowType: 'Default', mouthType: 'Smile', skinColor: 'Light' },
@@ -34,29 +34,28 @@ function DashboardPage() {
   useEffect(() => {
     const socketInitializer = async () => {
       socketRef.current = io('http://localhost:4000');
-  
+
       socketRef.current.on('connect', () => {
         console.log('Conectado al servidor de Socket.io');
         if (userId && username && avatarId) {
           socketRef.current.emit('registerUser', { userId, username, avatarId });
         }
       });
-  
+
       socketRef.current.on('updateUsers', (users) => {
         console.log('Usuarios conectados:', users);
         setConnectedUsers(users);
       });
     };
-  
+
     socketInitializer();
-  
+
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
     };
   }, [userId, username, avatarId]);
-
 
   console.log("connectedUsers", connectedUsers);
   // useEffect para verificar si el usuario está autenticado
@@ -121,7 +120,6 @@ function DashboardPage() {
     setIsChatOpen(false);
   };
 
-
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen bg-gray-800 text-white">Cargando...</div>;
   }
@@ -133,63 +131,6 @@ function DashboardPage() {
     return user ? user.username : 'Desconocido';
   };
 
-  const exampleUsers = [
-    {
-      _id: '1',
-      username: 'Juancho',
-      avatar: 'avatar1',
-      lastMessage: 'Hola tal cosa tal cosa tal cosa',
-      time: '09:00',
-      unreadCount: 2,
-    },
-    {
-      _id: '2',
-      username: 'Maria',
-      avatar: 'avatar2',
-      lastMessage: '¿Cómo estás?',
-      time: '09:15',
-      unreadCount: 1,
-    },
-    {
-      _id: '3',
-      username: 'Carlos',
-      avatar: 'avatar3',
-      lastMessage: 'Nos vemos mañana',
-      time: '10:30',
-      unreadCount: 0,
-    },
-    {
-      _id: '4',
-      username: 'Ana',
-      avatar: 'avatar4',
-      lastMessage: '¡Feliz cumpleaños!',
-      time: '11:45',
-      unreadCount: 3,
-    },
-    {
-      _id: '5',
-      username: 'Luis',
-      avatar: 'avatar5',
-      lastMessage: '¿Qué tal el proyecto?',
-      time: '12:00',
-      unreadCount: 0,
-    },
-    {
-      _id: '6',
-      username: 'Sofia',
-      avatar: 'avatar6',
-      lastMessage: 'Llámame cuando puedas',
-      time: '13:20',
-      unreadCount: 5,
-    },
-  ];
-
-  const truncateMessage = (message, maxLength) => {
-    return message.length > maxLength ? message.substring(0, maxLength) + '...' : message;
-  };
-
-  
-
   const filteredUsers = connectedUsers.filter(user => user.userId !== userId);
 
   console.log('userId:', userId);
@@ -198,29 +139,9 @@ function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
-      <Header avatar={userAvatar} userName={username} handleLogout={handleLogout} />
       <div className="flex flex-1 h-screen">
-        <div className={`p-2 sm:p-4 mt-0 pt-8 sm:pt-8 sm:mt-0 bg-[#00325b] flex flex-col justify-start items-center w-full sm:w-1/6 md:w-1/5 ${isChatOpen ? 'hidden' : 'block'} md:block`}>
-          <h2 className="text-2xl font-bold mb-4 text-center">Lista de Contactos</h2>
-          <div className="flex flex-col items-center justify-center space-y-2 overflow-y-auto w-full" style={{ maxHeight: 'calc(100vh - 150px)' }}>
-            {filteredUsers.map(user => (
-              <div
-                key={user.userId}
-                className="flex items-center p-2 cursor-pointer hover:bg-gray-600 w-full rounded-lg transition duration-300"
-                onClick={() => handleUserSelect(user)}
-              >
-                <Avatar
-                  style={{ width: '40px', height: '40px' }}
-                  avatarStyle='Circle'
-                  {...avatarMap[user.avatarId]}
-                />
-                <div className="ml-3 flex-1">
-                  <span className="font-bold">{user.username}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Sidebar avatar={userAvatar} username={username} handleLogout={handleLogout} />
+        <ContactsSidebar contacts={filteredUsers} handleUserSelect={handleUserSelect} messages={messages} />
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
           <main className="flex flex-1 w-full h-full bg-gray-800">
             {selectedUser ? (

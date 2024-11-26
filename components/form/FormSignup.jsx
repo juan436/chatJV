@@ -21,7 +21,7 @@ export const FormSignup = ({ reactHookForm, onSubmit }) => {
                         <input
                             type="text"
                             {...register('username')} 
-                            placeholder="Nombre"
+                            placeholder="Nombre de usuario"
                             required
                             className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
                         />

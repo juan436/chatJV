@@ -26,10 +26,14 @@ io.on('connection', (socket) => {
     });
 
     socket.on('sendMessage', (messageData) => {
+        console.log('Mensaje enviado:', messageData);
         const { receiverId, text, createdAt } = messageData;
         const receiver = connectedUsers[receiverId];
         if (receiver) {
             io.to(receiver.socketId).emit('receiveMessage', { senderId: messageData.senderId, text, createdAt });
+            console.log('Mensaje enviado a:', receiver.socketId);
+        } else {
+            console.log('Receptor no encontrado para el mensaje:', messageData);
         }
     });
 

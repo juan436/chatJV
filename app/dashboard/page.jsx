@@ -140,8 +140,8 @@ function DashboardPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
       <div className="flex flex-1 h-screen">
-        <Sidebar avatar={userAvatar} username={username} handleLogout={handleLogout} />
-        <ContactsSidebar contacts={filteredUsers} handleUserSelect={handleUserSelect} messages={messages} />
+        <Sidebar avatar={userAvatar} username={username} handleLogout={handleLogout} avatarMap={avatarMap} />
+        <ContactsSidebar contacts={filteredUsers} handleUserSelect={handleUserSelect} messages={messages} avatarMap={avatarMap} />
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
           <main className="flex flex-1 w-full h-full bg-gray-800">
             {selectedUser ? (

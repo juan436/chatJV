@@ -1,15 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Avatar from 'avataaars';
-import { FaComments, FaUserPlus, FaSignOutAlt, FaBell } from 'react-icons/fa'; // Importa FaBell
+import { FaComments, FaUserPlus, FaSignOutAlt, FaBell } from 'react-icons/fa';
+import AddContactModal from '../modals/AddContactModal';
+import AddNotificationModal from '../modals/AddNotificationModal';
 
-const Sidebar = ({ avatar, username, handleLogout }) => {
+const Sidebar = ({ avatar, username, handleLogout, avatarMap }) => {
   const [selected, setSelected] = useState('chats');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const menuRef = useRef(null);
 
-  const toggleModal = () => {
-    setSelected('add');
-  };
+  // Ejemplo de solicitudes de amistad
+  const friendRequests = [
+    { username: 'juan', avatarId: 'avatar1' },
+    { username: 'maria', avatarId: 'avatar2' },
+    { username: 'pedro', avatarId: 'avatar3' },
+  ];
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -39,13 +46,13 @@ const Sidebar = ({ avatar, username, handleLogout }) => {
         </button>
         <button
           className="text-white mb-4 p-2 w-full flex justify-center items-center transform active:scale-90 transition-transform"
-          onClick={toggleModal}
+          onClick={() => setShowAddModal(true)}
         >
           <FaUserPlus size={24} />
         </button>
         <button
           className="text-white mb-4 p-2 w-full flex justify-center items-center transform active:scale-90 transition-transform"
-          onClick={() => setSelected('notifications')} // Acción para notificaciones
+          onClick={() => setShowNotificationsModal(true)}
         >
           <FaBell size={24} />
         </button>
@@ -69,6 +76,17 @@ const Sidebar = ({ avatar, username, handleLogout }) => {
           <FaSignOutAlt size={24} />
         </button>
       </div>
+
+      {/* Modal de Agregar Contacto */}
+      <AddContactModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} avatarMap={avatarMap} />
+
+      {/* Modal de Notificaciones */}
+      <AddNotificationModal
+        isOpen={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+        requests={friendRequests}
+        avatarMap={avatarMap}
+      />
     </div>
   );
 };

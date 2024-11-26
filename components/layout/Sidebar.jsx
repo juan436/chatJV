@@ -4,21 +4,16 @@ import { FaComments, FaUserPlus, FaSignOutAlt, FaBell } from 'react-icons/fa';
 import AddContactModal from '../modals/AddContactModal';
 import AddNotificationModal from '../modals/AddNotificationModal';
 
-const Sidebar = ({ userInfo , handleLogout, avatarMap, Allusers }) => {
+const Sidebar = ({ userInfo, handleLogout, avatarMap, Allusers }) => {
 
-  const { avatar, userId, username, socketRef} = userInfo;
+  const { avatar, userId, username, socketRef, friendRequests } = userInfo;
+
+  console.log('avatar', avatar);
   const [selected, setSelected] = useState('chats');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const menuRef = useRef(null);
-
-  // Ejemplo de solicitudes de amistad
-  const friendRequests = [
-    { username: 'juan', avatarId: 'avatar1' },
-    { username: 'maria', avatarId: 'avatar2' },
-    { username: 'pedro', avatarId: 'avatar3' },
-  ];
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -37,6 +32,7 @@ const Sidebar = ({ userInfo , handleLogout, avatarMap, Allusers }) => {
     };
   }, []);
 
+  console.log('a ver', avatarMap[avatar]);
   return (
     <div className="flex flex-col justify-between items-center p-0 bg-gray-900 h-screen w-16">
       <div className="flex flex-col items-center w-full mt-10">
@@ -53,10 +49,15 @@ const Sidebar = ({ userInfo , handleLogout, avatarMap, Allusers }) => {
           <FaUserPlus size={24} />
         </button>
         <button
-          className="text-white mb-4 p-2 w-full flex justify-center items-center transform active:scale-90 transition-transform"
+          className="relative text-white mb-4 p-2 w-full flex justify-center items-center transform active:scale-90 transition-transform"
           onClick={() => setShowNotificationsModal(true)}
         >
           <FaBell size={24} />
+          {friendRequests.length > 0 && (
+            <span className="absolute top-1 right-1 bg-red-500 text-white rounded-full text-xs w-4 h-4 flex items-center justify-center">
+              {friendRequests.length}
+            </span>
+          )}
         </button>
       </div>
       <div className="flex flex-col items-center mb-20">
@@ -65,7 +66,7 @@ const Sidebar = ({ userInfo , handleLogout, avatarMap, Allusers }) => {
             <Avatar
               style={{ width: '40px', height: '40px' }}
               avatarStyle='Circle'
-              {...avatar}
+              {...avatarMap[avatar]}
             />
             {menuOpen && (
               <div className="absolute bottom-12 left-0 bg-gray-700 text-white p-2 rounded shadow-lg">

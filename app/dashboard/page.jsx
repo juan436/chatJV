@@ -41,6 +41,7 @@ function DashboardPage() {
   const [friendRequests, setFriendRequests] = useState([]);
   const [connectedUsers, setConnectedUsers] = useState([]);
 
+
   // useEffect para evitar que el usuario vuelva a la pagina de login al volver con el boton de atras del navegador
   useEffect(() => {
     window.history.pushState(null, '', window.location.pathname);
@@ -75,29 +76,29 @@ function DashboardPage() {
   useEffect(() => {
     const socketInitializer = async () => {
       socketRef.current = io('http://localhost:4000');
-  
+
       socketRef.current.on('connect', () => {
         console.log('Conectado al servidor de Socket.io');
         if (userId && username && avatarId) {
           socketRef.current.emit('registerUser', { userId, username, avatarId });
         }
       });
-  
+
       socketRef.current.on('updateUsers', (users) => {
         console.log('Usuarios conectados:', users);
         setConnectedUsers(users);
       });
     };
-  
+
     socketInitializer();
-  
+
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
     };
   }, [userId, username, avatarId]);
-  
+
   // Crear lista de amigos con estado de conexión
   const friendsWithStatus = confirmedFriends.map(friend => ({
     ...friend,
@@ -127,7 +128,7 @@ function DashboardPage() {
 
   const getFriendRequests = async (userId) => {
     try {
-      const response = await asApi.get(`/friends?senderId=${userId}&isVerified=false`);
+      const response = await asApi.get(`/friends?receiverId=${userId}&isVerified=false`);
       const pendingRequests = response.data;
       setFriendRequests(pendingRequests);
       console.log('Solicitudes de amistad pendientes:', pendingRequests);
@@ -137,15 +138,15 @@ function DashboardPage() {
   };
 
   const getAllUsers = async () => {
-  try {
-    const response = await asApi.get(`/users?id=${userId}`);
-    const users = response.data;
-    setAllUsers(users);
-    console.log('Todos los usuarios:', users);
-  } catch (error) {
-    console.error('Error al obtener todos los usuarios:', error);
-  }
-};
+    try {
+      const response = await asApi.get(`/users?id=${userId}`);
+      const users = response.data;
+      setAllUsers(users);
+      console.log('Todos los usuarios:', users);
+    } catch (error) {
+      console.error('Error al obtener todos los usuarios:', error);
+    }
+  };
 
   useEffect(() => {
 
@@ -157,6 +158,7 @@ function DashboardPage() {
     }
   }, [userId]);
 
+  console.log('friendRequests', friendRequests);
   console.log('confirmedFriends', confirmedFriends);
   console.log('allUsers', Allusers);
 
@@ -165,23 +167,21 @@ function DashboardPage() {
   // useEffect para recibir solicitudes de amistad
   useEffect(() => {
     if (socketRef.current) {
-      socketRef.current.on('receiveFriendRequest', ({ senderId }) => {
-        console.log('Nueva solicitud de amistad de:', senderId);
-        // Aquí puedes actualizar el estado de las solicitudes de amistad
-        setFriendRequests(prevRequests => [...prevRequests, { senderId }]);
-        // O mostrar una notificación en la UI
+      socketRef.current.on('receiveFriendRequest', ({ senderId, receiverId }) => {
+        if (receiverId === userId) {
+          console.log('Nueva solicitud de amistad de:', senderId);
+          setFriendRequests(prevRequests => [...prevRequests, { senderId }]);
+          localStorage.setItem('friendRequests', JSON.stringify([...friendRequests, { senderId }]));
+        }
       });
     }
-  
+
     return () => {
       if (socketRef.current) {
         socketRef.current.off('receiveFriendRequest');
       }
     };
-  }, []);
-
-
-
+  }, [friendRequests, userId]);
 
 
 
@@ -237,9 +237,11 @@ function DashboardPage() {
     avatar: avatarId,
     userId: userId,
     username: username,
-    socketRef: socketRef
+    socketRef: socketRef,
+    friendRequests: friendRequests
   };
 
+  console.log('friendRequests', friendRequests);
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
       <div className="flex flex-1 h-screen">

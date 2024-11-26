@@ -19,7 +19,6 @@ const avatarMap = {
 
 function DashboardPage() {
   const [loading, setLoading] = useState(true);
-  const [connectedUsers, setConnectedUsers] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -40,6 +39,7 @@ function DashboardPage() {
   const [confirmedFriends, setConfirmedFriends] = useState([]);
   const [Allusers, setAllUsers] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
+  const [connectedUsers, setConnectedUsers] = useState([]);
 
   // useEffect para evitar que el usuario vuelva a la pagina de login al volver con el boton de atras del navegador
   useEffect(() => {
@@ -52,35 +52,6 @@ function DashboardPage() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [router]);
-
-  // useEffect para inicializar el socket
-  useEffect(() => {
-    const socketInitializer = async () => {
-      socketRef.current = io('http://localhost:4000');
-
-      socketRef.current.on('connect', () => {
-        console.log('Conectado al servidor de Socket.io');
-        if (userId && username && avatarId) {
-          socketRef.current.emit('registerUser', { userId, username, avatarId });
-        }
-      });
-
-      socketRef.current.on('updateUsers', (users) => {
-        console.log('Usuarios conectados:', users);
-        setConnectedUsers(users);
-      });
-    };
-
-    socketInitializer();
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
-  }, [userId, username, avatarId]);
-
-  console.log("connectedUsers", connectedUsers);
 
   // useEffect para verificar si el usuario está autenticado
   useEffect(() => {
@@ -101,31 +72,41 @@ function DashboardPage() {
     }
   }, [router]);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  useEffect(() => {
+    const socketInitializer = async () => {
+      socketRef.current = io('http://localhost:4000');
+  
+      socketRef.current.on('connect', () => {
+        console.log('Conectado al servidor de Socket.io');
+        if (userId && username && avatarId) {
+          socketRef.current.emit('registerUser', { userId, username, avatarId });
+        }
+      });
+  
+      socketRef.current.on('updateUsers', (users) => {
+        console.log('Usuarios conectados:', users);
+        setConnectedUsers(users);
+      });
+    };
+  
+    socketInitializer();
+  
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [userId, username, avatarId]);
+  
+  // Crear lista de amigos con estado de conexión
+  const friendsWithStatus = confirmedFriends.map(friend => ({
+    ...friend,
+    isConnected: connectedUsers.some(user => user.userId === friend.receiver._id)
+  }));
 
 
 
   // GET para obtener los amigos confirmados  y todos los usuarios
-
-
-
   const getConfirmedFriends = async (userId) => {
     try {
       const response = await asApi.get(`/friends?senderId=${userId}&isVerified=true`);
@@ -155,36 +136,49 @@ function DashboardPage() {
     }
   };
 
+  const getAllUsers = async () => {
+  try {
+    const response = await asApi.get(`/users?id=${userId}`);
+    const users = response.data;
+    setAllUsers(users);
+    console.log('Todos los usuarios:', users);
+  } catch (error) {
+    console.error('Error al obtener todos los usuarios:', error);
+  }
+};
+
   useEffect(() => {
 
     if (userId) {
       getConfirmedFriends(userId);
       getUsers(userId);
       getFriendRequests(userId);
+      getAllUsers(userId);
     }
   }, [userId]);
 
   console.log('confirmedFriends', confirmedFriends);
+  console.log('allUsers', Allusers);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  // useEffect para recibir solicitudes de amistad
+  useEffect(() => {
+    if (socketRef.current) {
+      socketRef.current.on('receiveFriendRequest', ({ senderId }) => {
+        console.log('Nueva solicitud de amistad de:', senderId);
+        // Aquí puedes actualizar el estado de las solicitudes de amistad
+        setFriendRequests(prevRequests => [...prevRequests, { senderId }]);
+        // O mostrar una notificación en la UI
+      });
+    }
+  
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('receiveFriendRequest');
+      }
+    };
+  }, []);
 
 
 
@@ -239,12 +233,18 @@ function DashboardPage() {
   console.log('connectedUsers:', connectedUsers);
   console.log('filteredUsers:', filteredUsers);
 
+  const userInfo = {
+    avatar: avatarId,
+    userId: userId,
+    username: username,
+    socketRef: socketRef
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
       <div className="flex flex-1 h-screen">
-        <Sidebar avatar={userAvatar} username={username} handleLogout={handleLogout} avatarMap={avatarMap} />
-        <ContactsSidebar contacts={filteredUsers} handleUserSelect={handleUserSelect} messages={messages} avatarMap={avatarMap} />
+        <Sidebar userInfo={userInfo} handleLogout={handleLogout} avatarMap={avatarMap} Allusers={Allusers} />
+        <ContactsSidebar contacts={friendsWithStatus} handleUserSelect={handleUserSelect} messages={messages} avatarMap={avatarMap} />
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
           <main className="flex flex-1 w-full h-full bg-gray-800">
             {selectedUser ? (

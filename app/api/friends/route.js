@@ -42,3 +42,91 @@ export async function GET(req) {
         });
     }
 }
+
+export async function POST(req) {
+    await db.connect();
+
+    try {
+        const { senderId, receiverId } = await req.json();
+
+        if (!senderId || !receiverId) {
+            return new Response(JSON.stringify({ 
+                message: 'ID del emisor o receptor no proporcionado', 
+                variant: 'error' 
+            }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+        const newRequest = new Friends({
+            sender: senderId,
+            receiver: receiverId,
+            isVerified: false,
+        });
+
+        await newRequest.save();
+
+        return new Response(JSON.stringify(newRequest), {
+            status: 201,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    } catch (error) {
+        return new Response(JSON.stringify({ 
+            message: 'Error al crear la solicitud de amistad', 
+            error: error.message, 
+            variant: 'error' 
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }
+}
+
+export async function PATCH(req) {
+    await db.connect();
+
+    try {
+        const { requestId } = await req.json();
+
+        if (!requestId) {
+            return new Response(JSON.stringify({ 
+                message: 'ID de la solicitud no proporcionado', 
+                variant: 'error' 
+            }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+        const updatedRequest = await Friends.findByIdAndUpdate(
+            requestId,
+            { isVerified: true },
+            { new: true }
+        );
+
+        if (!updatedRequest) {
+            return new Response(JSON.stringify({ 
+                message: 'Solicitud no encontrada', 
+                variant: 'error' 
+            }), {
+                status: 404,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+        return new Response(JSON.stringify(updatedRequest), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    } catch (error) {
+        return new Response(JSON.stringify({ 
+            message: 'Error al actualizar la solicitud de amistad', 
+            error: error.message, 
+            variant: 'error' 
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }
+}

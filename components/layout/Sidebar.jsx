@@ -4,7 +4,9 @@ import { FaComments, FaUserPlus, FaSignOutAlt, FaBell } from 'react-icons/fa';
 import AddContactModal from '../modals/AddContactModal';
 import AddNotificationModal from '../modals/AddNotificationModal';
 
-const Sidebar = ({ avatar, username, handleLogout, avatarMap }) => {
+const Sidebar = ({ userInfo , handleLogout, avatarMap, Allusers }) => {
+
+  const { avatar, userId, username, socketRef} = userInfo;
   const [selected, setSelected] = useState('chats');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -78,7 +80,7 @@ const Sidebar = ({ avatar, username, handleLogout, avatarMap }) => {
       </div>
 
       {/* Modal de Agregar Contacto */}
-      <AddContactModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} avatarMap={avatarMap} />
+      <AddContactModal isOpen={showAddModal} userId={userId} Allusers={Allusers} onClose={() => setShowAddModal(false)} avatarMap={avatarMap} socketRef={socketRef} />
 
       {/* Modal de Notificaciones */}
       <AddNotificationModal

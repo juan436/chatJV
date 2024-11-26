@@ -37,6 +37,14 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('friendRequestSent', ({ receiverId, senderId }) => {
+        const receiver = connectedUsers[receiverId];
+        if (receiver) {
+            io.to(receiver.socketId).emit('receiveFriendRequest', { senderId });
+            console.log('Notificación de solicitud de amistad enviada a:', receiver.socketId);
+        }
+    });
+    
     socket.on('disconnect', () => {
         for (const [userId, userInfo] of Object.entries(connectedUsers)) {
             if (userInfo.socketId === socket.id) {

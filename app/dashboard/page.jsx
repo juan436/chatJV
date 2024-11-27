@@ -73,6 +73,7 @@ function DashboardPage() {
     }
   }, [router]);
 
+  // useEffect para conectar al socket
   useEffect(() => {
     const socketInitializer = async () => {
       socketRef.current = io('http://localhost:4000');
@@ -102,15 +103,16 @@ function DashboardPage() {
   // Crear lista de amigos con estado de conexión
   const friendsWithStatus = confirmedFriends.map(friend => ({
     ...friend,
-    isConnected: connectedUsers.some(user => user.userId === friend.receiver._id)
+    isConnected: connectedUsers.some(user => user.userId === friend._id)
   }));
 
+  console.log('friendsWithStatusaaa', friendsWithStatus);
 
 
-  // GET para obtener los amigos confirmados  y todos los usuarios
+  // GET para obtener los amigos confirmados
   const getConfirmedFriends = async (userId) => {
     try {
-      const response = await asApi.get(`/friends?senderId=${userId}&isVerified=true`);
+      const response = await asApi.get(`/friends?userId=${userId}&isVerified=true`);
       const confirmedFriends = response.data;
       setConfirmedFriends(confirmedFriends);
       console.log('Amigos confirmados:', confirmedFriends);
@@ -119,13 +121,15 @@ function DashboardPage() {
     }
   };
 
+  // GET para obtener todos los usuarios
   const getUsers = async (userId) => {
     const response = await asApi.get(`/users?id=${userId}`);
     const data = response.data;
     setAllUsers(data);
-    console.log('users', data);
+    console.log('users aaa', data);
   }
 
+  // GET para obtener las solicitudes de amistad pendientes
   const getFriendRequests = async (userId) => {
     try {
       const response = await asApi.get(`/friends?receiverId=${userId}&isVerified=false`);
@@ -137,24 +141,12 @@ function DashboardPage() {
     }
   };
 
-  const getAllUsers = async () => {
-    try {
-      const response = await asApi.get(`/users?id=${userId}`);
-      const users = response.data;
-      setAllUsers(users);
-      console.log('Todos los usuarios:', users);
-    } catch (error) {
-      console.error('Error al obtener todos los usuarios:', error);
-    }
-  };
-
   useEffect(() => {
 
     if (userId) {
       getConfirmedFriends(userId);
       getUsers(userId);
       getFriendRequests(userId);
-      getAllUsers(userId);
     }
   }, [userId]);
 
@@ -220,8 +212,6 @@ function DashboardPage() {
     return <div className="flex justify-center items-center min-h-screen bg-gray-800 text-white">Cargando...</div>;
   }
 
-  const userAvatar = avatarMap[avatarId];
-
   const getUserNameById = (id) => {
     const user = connectedUsers.find(user => user.userId === id);
     return user ? user.username : 'Desconocido';
@@ -243,7 +233,6 @@ function DashboardPage() {
     Allusers: Allusers
   };
 
-  console.log('friendRequests', friendRequests);
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
       <div className="flex flex-1 h-screen">

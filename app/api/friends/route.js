@@ -7,30 +7,59 @@ export async function GET(req) {
     try {
         const { searchParams } = new URL(req.url);
         const receiverId = searchParams.get('receiverId');
+        const userId = searchParams.get('userId');
         const isVerified = searchParams.get('isVerified');
 
-        if (!receiverId) {
+        let query = {};
+
+        if (userId && isVerified === 'true') {
+            query = {
+                $or: [
+                    { sender: userId },
+                    { receiver: userId }
+                ],
+                isVerified: true
+            };
+
+            const friendRequests = await Friends.find(query)
+                .populate('sender', 'username avatar')
+                .populate('receiver', 'username avatar');
+
+            const filteredFriends = friendRequests.map(friend => {
+                if (friend.sender._id.toString() === userId) {
+                    return friend.receiver;
+                } else {
+                    return friend.sender;
+                }
+            });
+
+            return new Response(JSON.stringify(filteredFriends), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        } else if (receiverId) {
+            query = { receiver: receiverId };
+            if (isVerified !== null) {
+                query.isVerified = isVerified === 'true';
+            }
+
+            const friendRequests = await Friends.find(query)
+                .populate('sender', 'username avatar')
+                .populate('receiver', 'username avatar');
+
+            return new Response(JSON.stringify(friendRequests), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        } else {
             return new Response(JSON.stringify({
-                message: 'ID del receptor no proporcionado',
+                message: 'ID del receptor o usuario no proporcionado',
                 variant: 'error'
             }), {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' },
             });
         }
-
-        let query = { receiver: receiverId }; // Cambiar a receiver
-
-        if (isVerified !== null) {
-            query.isVerified = isVerified === 'true';
-        }
-
-        const friendRequests = await Friends.find(query).populate('sender', 'username avatar');
-
-        return new Response(JSON.stringify(friendRequests), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
     } catch (error) {
         return new Response(JSON.stringify({
             message: 'Error al obtener solicitudes de amistad',

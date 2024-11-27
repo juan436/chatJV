@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Avatar from 'avataaars';
 
 const ContactsSidebar = ({ contacts, handleUserSelect, messages, avatarMap }) => {
+  console.log('contacts aaa', contacts);
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredContacts = contacts.filter(contact =>
@@ -27,7 +28,7 @@ const ContactsSidebar = ({ contacts, handleUserSelect, messages, avatarMap }) =>
       />
       <div className="flex flex-col overflow-y-auto">
         {filteredContacts.map(contact => {
-          const avatarData = avatarMap[contact.avatarId];
+          const avatarData = avatarMap[contact.avatar];
           const lastMessage = getLastMessage(contact.userId);
           const lastMessageTime = lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
           const lastMessageText = lastMessage ? lastMessage.text : 'No hay mensajes';

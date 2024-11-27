@@ -45,6 +45,14 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('logout', ({ userId }) => {
+        console.log('Usuario desconectado:', userId);
+        if (connectedUsers[userId]) {
+          connectedUsers[userId].isConnected = false;
+          io.emit('updateUsers', Object.values(connectedUsers));
+        }
+    });
+
     socket.on('disconnect', () => {
         for (const [userId, userInfo] of Object.entries(connectedUsers)) {
             if (userInfo.socketId === socket.id) {

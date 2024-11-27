@@ -40,6 +40,7 @@ function DashboardPage() {
   const [Allusers, setAllUsers] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
   const [connectedUsers, setConnectedUsers] = useState([]);
+  const [friendsWithStatus, setFriendsWithStatus] = useState([]);
 
 
   // useEffect para evitar que el usuario vuelva a la pagina de login al volver con el boton de atras del navegador
@@ -76,7 +77,7 @@ function DashboardPage() {
   // useEffect para conectar al socket
   useEffect(() => {
     const socketInitializer = async () => {
-      socketRef.current = io('http://localhost:4000');
+      socketRef.current = io('http://localhost:4000', { reconnection: false });
 
       socketRef.current.on('connect', () => {
         console.log('Conectado al servidor de Socket.io');
@@ -100,13 +101,22 @@ function DashboardPage() {
     };
   }, [userId, username, avatarId]);
 
-  // Crear lista de amigos con estado de conexión
-  const friendsWithStatus = confirmedFriends.map(friend => ({
-    ...friend,
-    isConnected: connectedUsers.some(user => user.userId === friend._id)
-  }));
+  console.log("usuarios conectados", connectedUsers);
 
-  console.log('friendsWithStatusaaa', friendsWithStatus);
+  // Crear lista de amigos con estado de conexión
+  useEffect(() => {
+    const updateFriendsWithStatus = () => {
+      const updatedFriends = confirmedFriends.map(friend => ({
+        ...friend,
+        isConnected: connectedUsers.some(user => user.userId === friend._id && user.isConnected)
+      }));
+      setFriendsWithStatus(updatedFriends);
+    };
+
+    updateFriendsWithStatus();
+  }, [confirmedFriends, connectedUsers]);
+
+  console.log('friendsWithStatus:', friendsWithStatus);
 
 
   // GET para obtener los amigos confirmados
@@ -181,6 +191,13 @@ function DashboardPage() {
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     setAvatarId(null);
+
+    // Emitir evento de cierre de sesión
+    if (socketRef.current) {
+      socketRef.current.emit('logout', { userId });
+      socketRef.current.disconnect();
+    }
+
     router.replace('/auth/login');
   }
 
@@ -230,7 +247,8 @@ function DashboardPage() {
     socketRef: socketRef,
     friendRequests: friendRequests,
     setFriendRequests: setFriendRequests,
-    Allusers: Allusers
+    Allusers: Allusers,
+    setConfirmedFriends: setConfirmedFriends
   };
 
   return (

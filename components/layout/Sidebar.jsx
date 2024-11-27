@@ -6,7 +6,7 @@ import AddNotificationModal from '../modals/AddNotificationModal';
 
 const Sidebar = ({ userInfo, handleLogout, avatarMap}) => {
 
-  const { avatar, userId, username, socketRef, friendRequests, setFriendRequests,  Allusers} = userInfo;
+  const { avatar, userId, username, socketRef, friendRequests, setFriendRequests,  Allusers, setConfirmedFriends} = userInfo;
 
   console.log('avatar', avatar);
   const [selected, setSelected] = useState('chats');
@@ -81,7 +81,7 @@ const Sidebar = ({ userInfo, handleLogout, avatarMap}) => {
       </div>
 
       {/* Modal de Agregar Contacto */}
-      <AddContactModal isOpen={showAddModal} userId={userId} Allusers={Allusers} onClose={() => setShowAddModal(false)} avatarMap={avatarMap} socketRef={socketRef} />
+      <AddContactModal isOpen={showAddModal}  userId={userId} Allusers={Allusers} onClose={() => setShowAddModal(false)} avatarMap={avatarMap} socketRef={socketRef} />
 
       {/* Modal de Notificaciones */}
       <AddNotificationModal
@@ -92,6 +92,7 @@ const Sidebar = ({ userInfo, handleLogout, avatarMap}) => {
         setFriendRequests={setFriendRequests}
         Allusers={Allusers}
         userId={userId}
+        setConfirmedFriends={setConfirmedFriends}
       />
     </div>
   );

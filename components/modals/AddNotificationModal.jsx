@@ -3,7 +3,7 @@ import Avatar from 'avataaars';
 import { asApi } from '@/apiAxios';
 import { FaCheck } from 'react-icons/fa';
 
-const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendRequests, Allusers, userId }) => {
+const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendRequests, Allusers, userId, setConfirmedFriends }) => {
   console.log('requests en modal', requests);
   console.log('Allusers en modal', Allusers);
   const modalRef = useRef(null);
@@ -27,7 +27,7 @@ const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendR
       if (!request.receiver) {
         return {
           ...request,
-          receiver: userId, // Agregar receiverId usando userId
+          receiver: userId,
           sender: request.sender || Allusers.find(user => user._id === request.senderId) || {}
         };
       }
@@ -38,6 +38,7 @@ const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendR
   const formattedRequests = formatRequests(requests);
 
   const handleAcceptRequest = async (request) => {
+    console.log('request en handleAcceptRequest', request);
     try {
       console.log('Enviando solicitud para aceptar:', request);
       const response = await asApi.patch('/friends', {
@@ -46,8 +47,22 @@ const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendR
       });
 
       if (response.status === 200) {
-        const updatedRequest = response.data;
-        console.log('Solicitud aceptada:', updatedRequest);
+        const updatedFriend = response.data;
+        console.log('Solicitud aceptada:', updatedFriend);
+
+        // Formatear la información del amigo confirmado
+        const formattedFriend = {
+          _id: request.sender._id,
+          username: request.sender.username,
+          avatar: request.sender.avatar,
+        };
+
+        console.log('formattedFriend', formattedFriend);
+        // Agregar el amigo confirmado al estado
+        setConfirmedFriends(prevFriends => [
+          ...prevFriends,
+          formattedFriend
+        ]);
 
         setFriendRequests(prevRequests => prevRequests.filter(req => req._id !== request._id));
         setAcceptedRequests(prev => [...prev, request._id]);

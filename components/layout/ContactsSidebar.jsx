@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import Avatar from 'avataaars';
 
-const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages }) => {
+const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages, unreadMessages, isChatOpen }) => {
+  console.log('unreadMessages aaa', unreadMessages);
   console.log('contacts aaa', contacts);
   console.log('lastMessages aaa', lastMessages);
-  
+
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredContacts = contacts.filter(contact =>
@@ -26,6 +27,7 @@ const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages }
           const lastMessage = lastMessages.find(msg => msg.users.includes(contact._id));
           const lastMessageText = lastMessage ? lastMessage.message.text : 'No hay mensajes';
           const lastMessageTime = lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+          const unreadCount = unreadMessages[contact._id] || 0;
 
           return (
             <div
@@ -47,6 +49,9 @@ const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages }
               <div className="flex flex-col items-end">
                 {contact.isConnected && (
                   <span className="w-3 h-3 rounded-full bg-green-500 mb-1"></span>
+                )}
+                {!isChatOpen && unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs rounded-full px-2">{unreadCount}</span>
                 )}
                 <span className="text-gray-300 text-xs">{lastMessageTime}</span>
               </div>

@@ -24,9 +24,6 @@ function DashboardPage() {
 
 
   const [loading, setLoading] = useState(true);
-
-
-
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const router = useRouter();
@@ -42,10 +39,8 @@ function DashboardPage() {
   const [friendRequests, setFriendRequests] = useState([]);
   const [connectedUsers, setConnectedUsers] = useState([]);
   const [friendsWithStatus, setFriendsWithStatus] = useState([]);
-
   const [lastMessages, setLastMessages] = useState([]);
 
-  console.log('lastMessages a', lastMessages);
 
   // useEffect para evitar que el usuario vuelva a la pagina de login al volver con el boton de atras del navegador
   useEffect(() => {
@@ -90,7 +85,6 @@ function DashboardPage() {
         }
       });
 
-      // Mover la lógica de recepción de mensajes aquí
       socketRef.current.on('receiveMessage', (message) => {
         console.log('Mensaje recibido:', message);
 
@@ -105,11 +99,13 @@ function DashboardPage() {
           },
         ]);
 
-        // Actualizar los mensajes no leídos
-        setUnreadMessages((prevUnread) => ({
-          ...prevUnread,
-          [message.senderId]: (prevUnread[message.senderId] || 0) + 1,
-        }));
+        // Solo actualizar los mensajes no leídos si el chat no está abierto
+        if (!isChatOpen || selectedUser?._id !== message.senderId) {
+          setUnreadMessages((prevUnread) => ({
+            ...prevUnread,
+            [message.senderId]: (prevUnread[message.senderId] || 0) + 1,
+          }));
+        }
       });
 
       socketRef.current.on('updateUsers', (users) => {
@@ -125,8 +121,8 @@ function DashboardPage() {
         socketRef.current.disconnect();
       }
     };
-  }, [userId, username, avatarId]);
-
+  }, [userId, username, avatarId, isChatOpen, selectedUser]);
+  
   console.log("usuarios conectados", connectedUsers);
 
   // Crear lista de amigos con estado de conexión
@@ -268,9 +264,11 @@ function DashboardPage() {
 
   // funcion para seleccionar un usuario y abrir el chat
   const handleUserSelect = (user) => {
-    console.log('user seleccionado', user);
+    console.log('Usuario seleccionado', user);
     setSelectedUser(user);
     setIsChatOpen(true);
+
+    // Marcar mensajes como leídos
     setUnreadMessages((prevUnread) => ({
       ...prevUnread,
       [user._id]: 0,
@@ -373,6 +371,7 @@ function DashboardPage() {
           avatarMap={avatarMap}
           lastMessages={lastMessages}
           unreadMessages={unreadMessages}
+          isChatOpen={isChatOpen}
         />
 
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>

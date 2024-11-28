@@ -3,7 +3,7 @@ import Avatar from 'avataaars';
 import { asApi } from '@/apiAxios';
 import { FaCheck } from 'react-icons/fa';
 
-const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendRequests, Allusers, userId, setConfirmedFriends }) => {
+const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendRequests, Allusers, userId, setConfirmedFriends, socketRef }) => {
   console.log('requests en modal', requests);
   console.log('Allusers en modal', Allusers);
   const modalRef = useRef(null);
@@ -66,6 +66,13 @@ const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendR
 
         setFriendRequests(prevRequests => prevRequests.filter(req => req._id !== request._id));
         setAcceptedRequests(prev => [...prev, request._id]);
+       
+        if (socketRef.current) {
+          socketRef.current.emit('acceptFriendRequest', {
+            senderId: request.sender._id,
+            receiverId: userId
+          });
+        }
       } else {
         console.error('Error al aceptar la solicitud:', response.statusText);
       }

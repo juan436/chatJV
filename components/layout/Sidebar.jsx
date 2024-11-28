@@ -93,6 +93,7 @@ const Sidebar = ({ userInfo, handleLogout, avatarMap}) => {
         Allusers={Allusers}
         userId={userId}
         setConfirmedFriends={setConfirmedFriends}
+        socketRef={socketRef}
       />
     </div>
   );

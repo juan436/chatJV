@@ -45,11 +45,21 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('acceptFriendRequest', ({ senderId, receiverId }) => {
+        console.log(`Evento acceptFriendRequest recibido: senderId=${senderId}, receiverId=${receiverId}`);
+
+        const sender = connectedUsers[senderId];
+        if (sender) {
+            io.to(sender.socketId).emit('friendRequestAccepted', { receiverId });
+            console.log('Notificación de aceptación de amistad enviada a:', sender.socketId);
+        }
+    });
+
     socket.on('logout', ({ userId }) => {
         console.log('Usuario desconectado:', userId);
         if (connectedUsers[userId]) {
-          connectedUsers[userId].isConnected = false;
-          io.emit('updateUsers', Object.values(connectedUsers));
+            connectedUsers[userId].isConnected = false;
+            io.emit('updateUsers', Object.values(connectedUsers));
         }
     });
 

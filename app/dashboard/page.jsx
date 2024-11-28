@@ -188,6 +188,44 @@ function DashboardPage() {
   }, [friendRequests, userId]);
 
 
+  console.log('friendRequests', friendRequests);
+
+  // useEffect para recibir notificaciones de aceptación de amistad
+  useEffect(() => {
+    if (socketRef.current) {
+      socketRef.current.on('friendRequestAccepted', ({ receiverId }) => {
+        console.log('Evento friendRequestAccepted recibido:', { receiverId });
+
+        // Buscar el usuario en Allusers que coincida con receiverId
+        const user = Allusers.find(user => user._id === receiverId);
+
+        if (user) {
+          // Formatear el objeto
+          const formattedUser = {
+            _id: user._id,
+            username: user.username,
+            avatar: user.avatar,
+            isConnected: true // o false, dependiendo de la lógica de conexión
+          };
+
+          // Mostrar el resultado formateado en la consola
+          console.log('Usuario formateado:', formattedUser);
+
+          // Anexar el usuario formateado a la lista de amigos confirmados
+          setConfirmedFriends(prevFriends => [...prevFriends, formattedUser]);
+        } else {
+          console.log('Usuario no encontrado');
+        }
+      });
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('friendRequestAccepted');
+      }
+    };
+  }, [socketRef, userId, Allusers]);
+
 
   // funcion para cerrar la sesion
   const handleLogout = () => {
@@ -204,32 +242,32 @@ function DashboardPage() {
   }
 
 
-     // funcion para seleccionar un usuario y abrir el chat
-     const handleUserSelect = async (user) => {
-      console.log('user seleccionado', user);
-      setSelectedUser(user);
-      setIsChatOpen(true);
-      setUnreadMessages((prevUnread) => ({
-        ...prevUnread,
-        [user._id]: 0,
-      }));
-  
-      try {
-        const response = await asApi.get(`/chat?userId=${userId}`);
-        const data = response.data;
-        setMessages(data);
-      } catch (error) {
-        console.error('Error al cargar mensajes:', error);
-      }
-    };
+  // funcion para seleccionar un usuario y abrir el chat
+  const handleUserSelect = async (user) => {
+    console.log('user seleccionado', user);
+    setSelectedUser(user);
+    setIsChatOpen(true);
+    setUnreadMessages((prevUnread) => ({
+      ...prevUnread,
+      [user._id]: 0,
+    }));
+
+    try {
+      const response = await asApi.get(`/chat?userId=${userId}`);
+      const data = response.data;
+      setMessages(data);
+    } catch (error) {
+      console.error('Error al cargar mensajes:', error);
+    }
+  };
 
 
-     // funcion para cerrar el chat
+  // funcion para cerrar el chat
   const handleCloseChat = () => {
     setSelectedUser(null);
     setIsChatOpen(false);
   };
-  
+
 
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen bg-gray-800 text-white">Cargando...</div>;
@@ -257,25 +295,14 @@ function DashboardPage() {
     setConfirmedFriends: setConfirmedFriends
   };
 
-  // const chatInfo = {
-  //   selectedUser:selectedUser,
-  //   setSelectedUser:setSelectedUser,
-  //   messages:messages,
-  //   setMessages:setMessages,
-  //   userId:userId,
-  //   socketRef:socketRef,
-  //   getUserNameById: getUserNameById,
-  //   handleCloseChat: handleCloseChat
-  // };
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
       <div className="flex flex-1 h-screen">
         <Sidebar userInfo={userInfo} handleLogout={handleLogout} avatarMap={avatarMap} />
-        <ContactsSidebar contacts={friendsWithStatus} 
-        handleUserSelect={handleUserSelect} 
-        messages={messages} 
-        avatarMap={avatarMap} 
+        <ContactsSidebar contacts={friendsWithStatus}
+          handleUserSelect={handleUserSelect}
+          messages={messages}
+          avatarMap={avatarMap}
         />
 
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>

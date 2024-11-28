@@ -51,7 +51,7 @@ const AddContactModal = ({ isOpen, userId, Allusers, onClose, avatarMap, socketR
       if (response.status === 201) {
         console.log('Solicitud de amistad enviada:', response.data);
         setSuccessMessage('Solicitud enviada');
-        setTimeout(() => setSuccessMessage(''), 3000); // Ocultar el mensaje después de 3 segundos
+        setTimeout(() => setSuccessMessage(''), 3000);
         if (socketRef.current) {
           socketRef.current.emit('friendRequestSent', { receiverId, senderId: userId });
         }

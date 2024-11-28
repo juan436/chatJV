@@ -17,7 +17,6 @@ const ContactsSidebar = ({ contacts, handleUserSelect, messages, avatarMap }) =>
     return null;
   };
 
-  
 
   return (
     <div className="flex flex-col p-4 bg-gray-700 h-screen w-1/5">

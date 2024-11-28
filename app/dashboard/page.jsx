@@ -20,13 +20,12 @@ const avatarMap = {
 function DashboardPage() {
 
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [usersPerPage, setUsersPerPage] = useState(10);
   const [unreadMessages, setUnreadMessages] = useState({});
 
 
   const [loading, setLoading] = useState(true);
 
-  const [currentPage, setCurrentPage] = useState(1);
+
 
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -89,6 +88,28 @@ function DashboardPage() {
         if (userId && username && avatarId) {
           socketRef.current.emit('registerUser', { userId, username, avatarId });
         }
+      });
+
+      // Mover la lógica de recepción de mensajes aquí
+      socketRef.current.on('receiveMessage', (message) => {
+        console.log('Mensaje recibido:', message);
+
+        // Actualizar la lista de mensajes localmente
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            sender: message.senderId,
+            message: { text: message.text },
+            createdAt: message.createdAt,
+            users: message.users,
+          },
+        ]);
+
+        // Actualizar los mensajes no leídos
+        setUnreadMessages((prevUnread) => ({
+          ...prevUnread,
+          [message.senderId]: (prevUnread[message.senderId] || 0) + 1,
+        }));
       });
 
       socketRef.current.on('updateUsers', (users) => {
@@ -297,28 +318,29 @@ function DashboardPage() {
   useEffect(() => {
     const getLastMessages = () => {
       const chatMap = {};
-  
+
       messages.forEach((msg) => {
         // Ordenar los IDs de los usuarios para crear una clave única
         const chatKey = msg.users.sort().join('-');
-  
+
         // Si el chat no existe en el mapa o el mensaje actual es más reciente, actualizar el mapa
         if (!chatMap[chatKey] || new Date(msg.createdAt) > new Date(chatMap[chatKey].createdAt)) {
           chatMap[chatKey] = msg;
         }
       });
-  
+
       // Convertir el mapa en un array de mensajes
       const lastMessagesArray = Object.values(chatMap);
       setLastMessages(lastMessagesArray);
     };
-  
+
     getLastMessages();
-  }, [messages]); 
+  }, [messages]);
 
-  console.log('lastMessages', lastMessages);
-
+  console.log("unreadMessages", unreadMessages);
+  console.log("isChatOpen", isChatOpen);
   console.log("messages", messages);
+  console.log("lastMessages", lastMessages);
 
 
   if (loading) {
@@ -329,12 +351,6 @@ function DashboardPage() {
     const user = connectedUsers.find(user => user.userId === id);
     return user ? user.username : 'Desconocido';
   };
-
-  const filteredUsers = connectedUsers.filter(user => user.userId !== userId);
-
-  console.log('userId:', userId);
-  console.log('connectedUsers:', connectedUsers);
-  console.log('filteredUsers:', filteredUsers);
 
   const userInfo = {
     avatar: avatarId,
@@ -356,6 +372,7 @@ function DashboardPage() {
           messages={messages}
           avatarMap={avatarMap}
           lastMessages={lastMessages}
+          unreadMessages={unreadMessages}
         />
 
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
@@ -370,6 +387,9 @@ function DashboardPage() {
                 socketRef={socketRef}
                 getUserNameById={getUserNameById}
                 handleCloseChat={handleCloseChat}
+                isChatOpen={isChatOpen}
+                setLastMessages={setLastMessages}
+                setUnreadMessages={setUnreadMessages}
               />
             ) : (
               <div className="flex justify-center items-center w-full h-full">

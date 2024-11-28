@@ -28,9 +28,9 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                 console.log('Mensaje recibido:', message);
                 setMessages((prevMessages) => [...prevMessages, { sender: message.senderId, message: { text: message.text }, createdAt: message.createdAt }]);
             };
-    
+
             socketRef.current.on('receiveMessage', handleReceiveMessage);
-    
+
             return () => {
                 socketRef.current.off('receiveMessage', handleReceiveMessage);
             };
@@ -52,29 +52,29 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
         if (newMessage.trim() && selectedUser) {
             const messageData = {
                 senderId: userId,
-                receiverId: selectedUser,
+                receiverId: selectedUser._id, // Cambiar a selectedUser._id
                 text: newMessage,
                 createdAt: new Date().toISOString(),
             };
-    
+
             console.log('Enviando mensaje:', messageData);
-    
+
             if (socketRef.current) {
                 socketRef.current.emit('sendMessage', messageData);
             }
-    
+
             // Guardar el mensaje en la base de datos
             try {
                 const response = await asApi.post('/chat', {
                     from: userId,
-                    to: selectedUser.userId,
+                    to: selectedUser._id,
                     text: newMessage,
                 });
                 console.log('Respuesta de la API:', response);
             } catch (error) {
                 console.error('Error al guardar el mensaje:', error);
             }
-    
+
             // Actualizar la lista de mensajes localmente
             setMessages((prevMessages) => [...prevMessages, { sender: userId, message: { text: newMessage }, createdAt: messageData.createdAt }]);
             setNewMessage('');
@@ -109,7 +109,7 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
             <div className="flex items-center p-4 bg-gray-900">
                 <button onClick={() => setShowEmojis(!showEmojis)} className="p-2 bg-gray-700 text-white rounded">😊</button>
                 {showEmojis && (
-                    <div ref={emojiRef} className="absolute bottom-12 left-0 z-10" style={{ backgroundColor: '#f0f0f0' }}>
+                    <div ref={emojiRef} className="absolute bottom-16 left-50 z-10" style={{ backgroundColor: '#f0f0f0' }}>
                         <Picker data={data} onEmojiSelect={handleEmojiClick} />
                     </div>
                 )}

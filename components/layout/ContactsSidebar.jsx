@@ -17,6 +17,8 @@ const ContactsSidebar = ({ contacts, handleUserSelect, messages, avatarMap }) =>
     return null;
   };
 
+  
+
   return (
     <div className="flex flex-col p-4 bg-gray-700 h-screen w-1/5">
       <h2 className="text-white text-lg mb-4">Mensajes</h2>
@@ -35,9 +37,9 @@ const ContactsSidebar = ({ contacts, handleUserSelect, messages, avatarMap }) =>
 
           return (
             <div
-              key={contact.userId}
+              key={contact._id}
               className="flex items-center justify-between p-2 mb-2 bg-blue-800 rounded cursor-pointer"
-              onClick={() => handleUserSelect(contact.userId)}
+              onClick={() => handleUserSelect(contact)}
             >
               <div className="flex items-center">
                 <Avatar

@@ -18,6 +18,12 @@ const avatarMap = {
 };
 
 function DashboardPage() {
+
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [usersPerPage, setUsersPerPage] = useState(10);
+  const [unreadMessages, setUnreadMessages] = useState({});
+
+
   const [loading, setLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,10 +37,6 @@ function DashboardPage() {
   const [userId, setUserId] = useState(null);
   const [username, setUsername] = useState('');
   const [avatarId, setAvatarId] = useState(null);
-
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [usersPerPage, setUsersPerPage] = useState(10);
-  const [unreadMessages, setUnreadMessages] = useState({});
 
   const [confirmedFriends, setConfirmedFriends] = useState([]);
   const [Allusers, setAllUsers] = useState([]);
@@ -201,29 +203,33 @@ function DashboardPage() {
     router.replace('/auth/login');
   }
 
-  // funcion para seleccionar un usuario y abrir el chat
-  const handleUserSelect = async (user) => {
-    setSelectedUser(user);
-    setIsChatOpen(true);
-    setUnreadMessages((prevUnread) => ({
-      ...prevUnread,
-      [user._id]: 0,
-    }));
 
-    try {
-      const response = await asApi.get(`/chat?userId=${userId}`);
-      const data = response.data;
-      setMessages(data);
-    } catch (error) {
-      console.error('Error al cargar mensajes:', error);
-    }
-  };
+     // funcion para seleccionar un usuario y abrir el chat
+     const handleUserSelect = async (user) => {
+      console.log('user seleccionado', user);
+      setSelectedUser(user);
+      setIsChatOpen(true);
+      setUnreadMessages((prevUnread) => ({
+        ...prevUnread,
+        [user._id]: 0,
+      }));
+  
+      try {
+        const response = await asApi.get(`/chat?userId=${userId}`);
+        const data = response.data;
+        setMessages(data);
+      } catch (error) {
+        console.error('Error al cargar mensajes:', error);
+      }
+    };
 
-  // funcion para cerrar el chat
+
+     // funcion para cerrar el chat
   const handleCloseChat = () => {
     setSelectedUser(null);
     setIsChatOpen(false);
   };
+  
 
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen bg-gray-800 text-white">Cargando...</div>;
@@ -251,11 +257,27 @@ function DashboardPage() {
     setConfirmedFriends: setConfirmedFriends
   };
 
+  // const chatInfo = {
+  //   selectedUser:selectedUser,
+  //   setSelectedUser:setSelectedUser,
+  //   messages:messages,
+  //   setMessages:setMessages,
+  //   userId:userId,
+  //   socketRef:socketRef,
+  //   getUserNameById: getUserNameById,
+  //   handleCloseChat: handleCloseChat
+  // };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-800 text-white">
       <div className="flex flex-1 h-screen">
         <Sidebar userInfo={userInfo} handleLogout={handleLogout} avatarMap={avatarMap} />
-        <ContactsSidebar contacts={friendsWithStatus} handleUserSelect={handleUserSelect} messages={messages} avatarMap={avatarMap} />
+        <ContactsSidebar contacts={friendsWithStatus} 
+        handleUserSelect={handleUserSelect} 
+        messages={messages} 
+        avatarMap={avatarMap} 
+        />
+
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
           <main className="flex flex-1 w-full h-full bg-gray-800">
             {selectedUser ? (
@@ -276,6 +298,7 @@ function DashboardPage() {
             )}
           </main>
         </div>
+
       </div>
     </div>
   );

@@ -26,7 +26,17 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
         if (socketRef.current) {
             const handleReceiveMessage = (message) => {
                 console.log('Mensaje recibido:', message);
-                setMessages((prevMessages) => [...prevMessages, { sender: message.senderId, message: { text: message.text }, createdAt: message.createdAt }]);
+
+                // Utilizar directamente el arreglo 'users' del mensaje recibido
+                setMessages((prevMessages) => [
+                    ...prevMessages,
+                    {
+                        sender: message.senderId,
+                        message: { text: message.text },
+                        createdAt: message.createdAt,
+                        users: message.users,
+                    },
+                ]);
             };
 
             socketRef.current.on('receiveMessage', handleReceiveMessage);
@@ -35,7 +45,7 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                 socketRef.current.off('receiveMessage', handleReceiveMessage);
             };
         }
-    }, [socketRef, setMessages]);
+    }, [socketRef, setMessages, selectedUser]);
 
     // Desplaza el scroll al final cuando cambian los mensajes
     useEffect(() => {
@@ -50,11 +60,15 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
 
     const handleSendMessage = async () => {
         if (newMessage.trim() && selectedUser) {
+            // Crear el arreglo de usuarios
+            const users = [userId, selectedUser._id].sort();
+
             const messageData = {
                 senderId: userId,
-                receiverId: selectedUser._id, // Cambiar a selectedUser._id
+                receiverId: selectedUser._id,
                 text: newMessage,
                 createdAt: new Date().toISOString(),
+                users: users,
             };
 
             console.log('Enviando mensaje:', messageData);
@@ -69,6 +83,7 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                     from: userId,
                     to: selectedUser._id,
                     text: newMessage,
+                    users: users,
                 });
                 console.log('Respuesta de la API:', response);
             } catch (error) {
@@ -76,7 +91,15 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
             }
 
             // Actualizar la lista de mensajes localmente
-            setMessages((prevMessages) => [...prevMessages, { sender: userId, message: { text: newMessage }, createdAt: messageData.createdAt }]);
+            setMessages((prevMessages) => [
+                ...prevMessages,
+                {
+                    sender: userId,
+                    message: { text: newMessage },
+                    createdAt: messageData.createdAt,
+                    users: users, // Incluir el arreglo de usuarios
+                },
+            ]);
             setNewMessage('');
         }
     };

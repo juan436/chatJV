@@ -44,6 +44,9 @@ function DashboardPage() {
   const [connectedUsers, setConnectedUsers] = useState([]);
   const [friendsWithStatus, setFriendsWithStatus] = useState([]);
 
+  const [lastMessages, setLastMessages] = useState([]);
+
+  console.log('lastMessages a', lastMessages);
 
   // useEffect para evitar que el usuario vuelva a la pagina de login al volver con el boton de atras del navegador
   useEffect(() => {
@@ -243,7 +246,7 @@ function DashboardPage() {
 
 
   // funcion para seleccionar un usuario y abrir el chat
-  const handleUserSelect = async (user) => {
+  const handleUserSelect = (user) => {
     console.log('user seleccionado', user);
     setSelectedUser(user);
     setIsChatOpen(true);
@@ -252,21 +255,70 @@ function DashboardPage() {
       [user._id]: 0,
     }));
 
-    try {
-      const response = await asApi.get(`/chat?userId=${userId}`);
-      const data = response.data;
-      setMessages(data);
-    } catch (error) {
-      console.error('Error al cargar mensajes:', error);
-    }
-  };
+    // Filtrar mensajes que incluyan el _id del usuario seleccionado
+    const filteredMessages = messages.filter(message =>
+      Array.isArray(message.users) && message.users.includes(user._id)
+    );
 
+    setMessages(filteredMessages);
+    console.log('Mensajes filtrados:', filteredMessages);
+  };
 
   // funcion para cerrar el chat
   const handleCloseChat = () => {
     setSelectedUser(null);
     setIsChatOpen(false);
   };
+
+  // funcion para obtener los mensajes
+  const fetchMessages = async () => {
+    try {
+      const response = await asApi.get(`/chat?userId=${userId}`);
+      if (response.status === 200) {
+        setMessages(response.data);
+        console.log('Mensajes recibidos:', response.data);
+      } else {
+        console.error('Error al obtener mensajes:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error al obtener mensajes:', error);
+    }
+  };
+
+  // useEffect para obtener los mensajes
+  useEffect(() => {
+    if (userId) {
+      fetchMessages();
+    }
+  }, [userId]);
+
+
+  // useEffect para obtener los ultimos mensajes
+  useEffect(() => {
+    const getLastMessages = () => {
+      const chatMap = {};
+  
+      messages.forEach((msg) => {
+        // Ordenar los IDs de los usuarios para crear una clave única
+        const chatKey = msg.users.sort().join('-');
+  
+        // Si el chat no existe en el mapa o el mensaje actual es más reciente, actualizar el mapa
+        if (!chatMap[chatKey] || new Date(msg.createdAt) > new Date(chatMap[chatKey].createdAt)) {
+          chatMap[chatKey] = msg;
+        }
+      });
+  
+      // Convertir el mapa en un array de mensajes
+      const lastMessagesArray = Object.values(chatMap);
+      setLastMessages(lastMessagesArray);
+    };
+  
+    getLastMessages();
+  }, [messages]); 
+
+  console.log('lastMessages', lastMessages);
+
+  console.log("messages", messages);
 
 
   if (loading) {
@@ -303,6 +355,7 @@ function DashboardPage() {
           handleUserSelect={handleUserSelect}
           messages={messages}
           avatarMap={avatarMap}
+          lastMessages={lastMessages}
         />
 
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>

@@ -1,22 +1,15 @@
 import React, { useState } from 'react';
 import Avatar from 'avataaars';
 
-const ContactsSidebar = ({ contacts, handleUserSelect, messages, avatarMap }) => {
+const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages }) => {
   console.log('contacts aaa', contacts);
+  console.log('lastMessages aaa', lastMessages);
+  
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredContacts = contacts.filter(contact =>
     contact.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const getLastMessage = (userId) => {
-    const userMessages = messages.filter(msg => msg.sender === userId || msg.receiver === userId);
-    if (userMessages.length > 0) {
-      return userMessages[userMessages.length - 1];
-    }
-    return null;
-  };
-
 
   return (
     <div className="flex flex-col p-4 bg-gray-700 h-screen w-1/5">
@@ -30,9 +23,9 @@ const ContactsSidebar = ({ contacts, handleUserSelect, messages, avatarMap }) =>
       <div className="flex flex-col overflow-y-auto">
         {filteredContacts.map(contact => {
           const avatarData = avatarMap[contact.avatar];
-          const lastMessage = getLastMessage(contact.userId);
+          const lastMessage = lastMessages.find(msg => msg.users.includes(contact._id));
+          const lastMessageText = lastMessage ? lastMessage.message.text : 'No hay mensajes';
           const lastMessageTime = lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-          const lastMessageText = lastMessage ? lastMessage.text : 'No hay mensajes';
 
           return (
             <div

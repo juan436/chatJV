@@ -27,10 +27,15 @@ io.on('connection', (socket) => {
 
     socket.on('sendMessage', (messageData) => {
         console.log('Mensaje enviado:', messageData);
-        const { receiverId, text, createdAt } = messageData;
+        const { senderId, receiverId, text, createdAt } = messageData;
         const receiver = connectedUsers[receiverId];
+
         if (receiver) {
-            io.to(receiver.socketId).emit('receiveMessage', { senderId: messageData.senderId, text, createdAt });
+            // Crear el arreglo de usuarios
+            const users = [senderId, receiverId].sort();
+
+            // Emitir el mensaje con el arreglo de usuarios
+            io.to(receiver.socketId).emit('receiveMessage', { senderId, text, createdAt, users });
             console.log('Mensaje enviado a:', receiver.socketId);
         } else {
             console.log('Receptor no encontrado para el mensaje:', messageData);

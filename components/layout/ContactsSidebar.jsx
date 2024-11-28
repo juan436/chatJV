@@ -12,6 +12,10 @@ const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages, 
     contact.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const truncateText = (text, maxLength) => {
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
   return (
     <div className="flex flex-col p-4 bg-gray-700 h-screen w-1/5">
       <h2 className="text-white text-lg mb-4">Mensajes</h2>
@@ -25,7 +29,7 @@ const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages, 
         {filteredContacts.map(contact => {
           const avatarData = avatarMap[contact.avatar];
           const lastMessage = lastMessages.find(msg => msg.users.includes(contact._id));
-          const lastMessageText = lastMessage ? lastMessage.message.text : 'No hay mensajes';
+          const lastMessageText = lastMessage ? truncateText(lastMessage.message.text, 20) : 'No hay mensajes';
           const lastMessageTime = lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
           const unreadCount = unreadMessages[contact._id] || 0;
 
@@ -47,12 +51,14 @@ const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages, 
                 </div>
               </div>
               <div className="flex flex-col items-end">
-                {contact.isConnected && (
-                  <span className="w-3 h-3 rounded-full bg-green-500 mb-1"></span>
-                )}
-                {!isChatOpen && unreadCount > 0 && (
-                  <span className="bg-red-500 text-white text-xs rounded-full px-2">{unreadCount}</span>
-                )}
+                <div className="flex items-center">
+                  {unreadCount > 0 && !isChatOpen && (
+                    <span className="bg-red-500 text-white text-xs rounded-full px-2 mr-1">{unreadCount}</span>
+                  )}
+                  {contact.isConnected && (
+                    <span className="w-3 h-3 rounded-full bg-green-500 mb-1"></span>
+                  )}
+                </div>
                 <span className="text-gray-300 text-xs">{lastMessageTime}</span>
               </div>
             </div>

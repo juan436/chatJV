@@ -52,7 +52,7 @@ const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages, 
               </div>
               <div className="flex flex-col items-end">
                 <div className="flex items-center">
-                  {unreadCount > 0 && !isChatOpen && (
+                  {unreadCount > 0 && (
                     <span className="bg-red-500 text-white text-xs rounded-full px-2 mr-1">{unreadCount}</span>
                   )}
                   {contact.isConnected && (

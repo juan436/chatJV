@@ -3,7 +3,7 @@ import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 import asApi from '@/apiAxios/asApi';
 
-const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, socketRef, getUserNameById, handleCloseChat }) => {
+const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, socketRef, getUserNameById, handleCloseChat, setUnreadMessages}) => {
     const [newMessage, setNewMessage] = useState('');
     const [showEmojis, setShowEmojis] = useState(false);
     const emojiRef = useRef(null);
@@ -27,16 +27,24 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
             const handleReceiveMessage = (message) => {
                 console.log('Mensaje recibido:', message);
 
-                // Utilizar directamente el arreglo 'users' del mensaje recibido
-                setMessages((prevMessages) => [
-                    ...prevMessages,
-                    {
-                        sender: message.senderId,
-                        message: { text: message.text },
-                        createdAt: message.createdAt,
-                        users: message.users,
-                    },
-                ]);
+                // Verifica si el mensaje pertenece a la conversación actual
+                if (message.users.includes(selectedUser._id)) {
+                    setMessages((prevMessages) => [
+                        ...prevMessages,
+                        {
+                            sender: message.senderId,
+                            message: { text: message.text },
+                            createdAt: message.createdAt,
+                            users: message.users,
+                        },
+                    ]);
+                } else {
+                    // Incrementa el contador de mensajes no leídos si el chat no está abierto con el remitente
+                    setUnreadMessages((prevUnread) => ({
+                        ...prevUnread,
+                        [message.senderId]: (prevUnread[message.senderId] || 0) + 1,
+                    }));
+                }
             };
 
             socketRef.current.on('receiveMessage', handleReceiveMessage);
@@ -45,7 +53,7 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                 socketRef.current.off('receiveMessage', handleReceiveMessage);
             };
         }
-    }, [socketRef, setMessages, selectedUser]);
+    }, [socketRef, selectedUser, setMessages, setUnreadMessages]);
 
     // Desplaza el scroll al final cuando cambian los mensajes
     useEffect(() => {

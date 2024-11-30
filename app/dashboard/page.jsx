@@ -41,6 +41,8 @@ function DashboardPage() {
   const [friendsWithStatus, setFriendsWithStatus] = useState([]);
   const [lastMessages, setLastMessages] = useState([]);
 
+  const [currentConversationMessages, setCurrentConversationMessages] = useState([]);
+
 
   // useEffect para evitar que el usuario vuelva a la pagina de login al volver con el boton de atras del navegador
   useEffect(() => {
@@ -122,8 +124,6 @@ function DashboardPage() {
       }
     };
   }, [userId, username, avatarId, isChatOpen, selectedUser]);
-  
-  console.log("usuarios conectados", connectedUsers);
 
   // Crear lista de amigos con estado de conexión
   useEffect(() => {
@@ -137,8 +137,6 @@ function DashboardPage() {
 
     updateFriendsWithStatus();
   }, [confirmedFriends, connectedUsers]);
-
-  console.log('friendsWithStatus:', friendsWithStatus);
 
 
   // GET para obtener los amigos confirmados
@@ -181,12 +179,6 @@ function DashboardPage() {
       getFriendRequests(userId);
     }
   }, [userId]);
-
-  console.log('friendRequests', friendRequests);
-  console.log('confirmedFriends', confirmedFriends);
-  console.log('allUsers', Allusers);
-
-
 
   // useEffect para recibir solicitudes de amistad
   useEffect(() => {
@@ -279,9 +271,17 @@ function DashboardPage() {
       Array.isArray(message.users) && message.users.includes(user._id)
     );
 
-    setMessages(filteredMessages);
-    console.log('Mensajes filtrados:', filteredMessages);
+    setCurrentConversationMessages(filteredMessages); 
   };
+
+  useEffect(() => {
+    if (selectedUser) {
+      const filteredMessages = messages.filter(message =>
+        Array.isArray(message.users) && message.users.includes(selectedUser._id)
+      );
+      setCurrentConversationMessages(filteredMessages);
+    }
+  }, [messages, selectedUser]);
 
   // funcion para cerrar el chat
   const handleCloseChat = () => {
@@ -335,10 +335,27 @@ function DashboardPage() {
     getLastMessages();
   }, [messages]);
 
-  console.log("unreadMessages", unreadMessages);
-  console.log("isChatOpen", isChatOpen);
-  console.log("messages", messages);
-  console.log("lastMessages", lastMessages);
+
+  useEffect(() => {
+    console.log("Monitoreando a friendRequests", friendRequests);
+    console.log("Monitoreando a confirmedFriends", confirmedFriends);
+    console.log("Monitoreando a  allUsers", Allusers);
+  }, [friendRequests, confirmedFriends, Allusers]);
+
+  useEffect(() => {
+    console.log("Monitoreando a connectedUsers", connectedUsers);
+  }, [connectedUsers]);
+  useEffect(() => {
+    console.log("Monitoreando a friendsWithStatus", friendsWithStatus);
+  }, [friendsWithStatus]);
+
+  useEffect(() => {
+    console.log("Monitoreando a unreadMessages", unreadMessages);
+    console.log("Monitoreando a isChatOpen", isChatOpen);
+    console.log("Monitoreando a messages", messages);
+    console.log("Monitoreando a lastMessages", lastMessages);
+  }, [unreadMessages, isChatOpen, messages, lastMessages]);
+
 
 
   if (loading) {
@@ -380,7 +397,7 @@ function DashboardPage() {
               <Chat
                 selectedUser={selectedUser}
                 setSelectedUser={setSelectedUser}
-                messages={messages}
+                messages={currentConversationMessages}
                 setMessages={setMessages}
                 userId={userId}
                 socketRef={socketRef}

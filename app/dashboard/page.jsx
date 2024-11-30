@@ -271,7 +271,7 @@ function DashboardPage() {
       Array.isArray(message.users) && message.users.includes(user._id)
     );
 
-    setCurrentConversationMessages(filteredMessages); 
+    setCurrentConversationMessages(filteredMessages);
   };
 
   useEffect(() => {
@@ -379,42 +379,40 @@ function DashboardPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-800 text-white">
-      <div className="flex flex-1 h-screen">
-        <Sidebar userInfo={userInfo} handleLogout={handleLogout} avatarMap={avatarMap} />
-        <ContactsSidebar contacts={friendsWithStatus}
-          handleUserSelect={handleUserSelect}
-          messages={messages}
-          avatarMap={avatarMap}
-          lastMessages={lastMessages}
-          unreadMessages={unreadMessages}
-          isChatOpen={isChatOpen}
-        />
+    <div className="flex min-h-screen bg-gray-800 text-white">
+      <Sidebar userInfo={userInfo} handleLogout={handleLogout} avatarMap={avatarMap} />
+      <ContactsSidebar
+        contacts={friendsWithStatus}
+        handleUserSelect={handleUserSelect}
+        messages={messages}
+        avatarMap={avatarMap}
+        lastMessages={lastMessages}
+        unreadMessages={unreadMessages}
+        isChatOpen={isChatOpen}
+      />
 
-        <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
-          <main className="flex flex-1 w-full h-full bg-gray-800">
-            {selectedUser ? (
-              <Chat
-                selectedUser={selectedUser}
-                setSelectedUser={setSelectedUser}
-                messages={currentConversationMessages}
-                setMessages={setMessages}
-                userId={userId}
-                socketRef={socketRef}
-                getUserNameById={getUserNameById}
-                handleCloseChat={handleCloseChat}
-                isChatOpen={isChatOpen}
-                setLastMessages={setLastMessages}
-                setUnreadMessages={setUnreadMessages}
-              />
-            ) : (
-              <div className="flex justify-center items-center w-full h-full">
-                <p className="text-center">Seleccione un contacto para chatear</p>
-              </div>
-            )}
-          </main>
-        </div>
-
+      <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
+        <main className="flex flex-1 w-full h-full bg-gray-800">
+          {selectedUser ? (
+            <Chat
+              selectedUser={selectedUser}
+              setSelectedUser={setSelectedUser}
+              messages={currentConversationMessages}
+              setMessages={setMessages}
+              userId={userId}
+              socketRef={socketRef}
+              getUserNameById={getUserNameById}
+              handleCloseChat={handleCloseChat}
+              isChatOpen={isChatOpen}
+              setLastMessages={setLastMessages}
+              setUnreadMessages={setUnreadMessages}
+            />
+          ) : (
+            <div className="flex justify-center items-center w-full h-full">
+              <p className="text-center">Seleccione un contacto para chatear</p>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );

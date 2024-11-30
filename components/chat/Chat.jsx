@@ -119,7 +119,7 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
     };
 
     return (
-        <div className="flex-1 flex flex-col h-100">
+        <div className="flex-1 flex flex-col h-full">
             <div className="flex items-center justify-between p-4 bg-gray-900">
                 <h2 className="text-xl font-bold">{selectedUser.username}</h2>
                 <button onClick={handleCloseChat} className="text-white text-xl">✖</button>

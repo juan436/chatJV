@@ -379,7 +379,8 @@ function DashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-800 text-white">
+    <div className="flex h-screen text-white">
+      
       <Sidebar userInfo={userInfo} handleLogout={handleLogout} avatarMap={avatarMap} />
       <ContactsSidebar
         contacts={friendsWithStatus}
@@ -391,8 +392,7 @@ function DashboardPage() {
         isChatOpen={isChatOpen}
       />
 
-      <div className={`flex-1 flex flex-col ${isChatOpen ? 'block' : 'hidden'} md:block`}>
-        <main className="flex flex-1 w-full h-full bg-gray-800">
+      <div className={`flex-1 ${isChatOpen ? 'block' : 'hidden'} md:block`}>
           {selectedUser ? (
             <Chat
               selectedUser={selectedUser}
@@ -408,12 +408,12 @@ function DashboardPage() {
               setUnreadMessages={setUnreadMessages}
             />
           ) : (
-            <div className="flex justify-center items-center w-full h-full">
+            <div className="flex justify-center items-center w-full h-screen bg-gray-800">
               <p className="text-center">Seleccione un contacto para chatear</p>
             </div>
           )}
-        </main>
       </div>
+      
     </div>
   );
 }

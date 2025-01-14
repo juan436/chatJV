@@ -3,7 +3,7 @@ import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 import asApi from '@/apiAxios/asApi';
 
-const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, socketRef, getUserNameById, handleCloseChat, setUnreadMessages}) => {
+const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, socketRef, getUserNameById, handleCloseChat, setUnreadMessages }) => {
     const [newMessage, setNewMessage] = useState('');
     const [showEmojis, setShowEmojis] = useState(false);
     const emojiRef = useRef(null);
@@ -119,40 +119,66 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full">
+        <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-4 bg-gray-900">
                 <h2 className="text-xl font-bold">{selectedUser.username}</h2>
-                <button onClick={handleCloseChat} className="text-white text-xl">✖</button>
+                <button onClick={handleCloseChat} className="text-white text-xl">
+                    ✖
+                </button>
             </div>
-            <div className="flex-1 overflow-y-auto bg-gray-800 p-2 rounded custom-scrollbar" style={{ maxHeight: 'calc(107vh - 200px)', overflowY: 'auto' }}>
+
+            <div className="flex-1 overflow-y-auto bg-gray-800 p-2 custom-scrollbar">
                 {messages.map((msg, index) => (
                     <div
                         key={index}
-                        className={`mb-2 p-2 rounded-lg max-w-xs ${msg.sender === userId ? 'bg-gray-600 text-white mr-auto' : 'bg-blue-500 text-white ml-auto'}`}
+                        className={`mb-2 p-2 rounded-lg max-w-xs  ${msg.sender === userId
+                                ? 'bg-gray-600 text-white mr-auto'
+                                : 'bg-blue-500 text-white ml-auto'
+                            }`}
                     >
                         <span className="font-bold">{getUserNameById(msg.sender)}: </span>
                         <span>{msg.message.text}</span>
-                        <span className="block text-xs text-gray-400">{new Date(msg.createdAt).toLocaleTimeString()}</span>
+                        <span className="block text-xs text-gray-400">
+                            {new Date(msg.createdAt).toLocaleTimeString()}
+                        </span>
                     </div>
                 ))}
                 <div ref={messagesEndRef} />
             </div>
-            <div className="flex items-center p-4 bg-gray-900">
-                <button onClick={() => setShowEmojis(!showEmojis)} className="p-2 bg-gray-700 text-white rounded">😊</button>
-                {showEmojis && (
-                    <div ref={emojiRef} className="absolute bottom-16 left-50 z-10" style={{ backgroundColor: '#f0f0f0' }}>
-                        <Picker data={data} onEmojiSelect={handleEmojiClick} />
+
+            <div className="p-4 bg-gray-900 mt-auto">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowEmojis(!showEmojis)}
+                        className="p-2 bg-gray-700 text-white rounded hover:bg-gray-600"
+                    >
+                        😊
+                    </button>
+                    {showEmojis && (
+                        <div
+                            ref={emojiRef}
+                            className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10 bg-gray-200 p-2 rounded"
+                        >
+                            <Picker data={data} onEmojiSelect={handleEmojiClick} />
+                        </div>
+                    )}
+                    <div className="flex-1 flex gap-2">
+                        <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder="Escribe un mensaje..."
+                            className="flex-1 p-2 rounded bg-gray-700 text-white"
+                        />
+                        <button
+                            onClick={handleSendMessage}
+                            className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded"
+                        >
+                            Enviar
+                        </button>
                     </div>
-                )}
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Escribe un mensaje..."
-                    className="flex-1 p-2 rounded bg-gray-700 text-white ml-2"
-                />
-                <button onClick={handleSendMessage} className="ml-2 p-2 bg-gray-700 text-white rounded">Enviar</button>
+                </div>
             </div>
         </div>
     );

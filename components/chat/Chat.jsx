@@ -11,7 +11,8 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (emojiRef.current && !emojiRef.current.contains(event.target)) {
+            if (emojiRef.current && !emojiRef.current.contains(event.target) && 
+                !event.target.closest('button[data-emoji-button="true"]')) {
                 setShowEmojis(false);
             }
         };
@@ -24,20 +25,38 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
 
     useEffect(() => {
         if (socketRef.current) {
+            // Limpiar cualquier listener previo para evitar duplicados
+            socketRef.current.off('receiveMessage');
+            
             const handleReceiveMessage = (message) => {
                 console.log('Mensaje recibido:', message);
 
                 // Verifica si el mensaje pertenece a la conversación actual
                 if (message.users.includes(selectedUser._id)) {
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        {
-                            sender: message.senderId,
-                            message: { text: message.text },
-                            createdAt: message.createdAt,
-                            users: message.users,
-                        },
-                    ]);
+                    // Verificar que el mensaje no esté ya en la lista para evitar duplicados
+                    setMessages((prevMessages) => {
+                        // Verificar si el mensaje ya existe en la lista
+                        const isDuplicate = prevMessages.some(
+                            msg => 
+                                msg.sender === message.senderId && 
+                                msg.message.text === message.text && 
+                                msg.createdAt === message.createdAt
+                        );
+                        
+                        if (isDuplicate) {
+                            return prevMessages;
+                        }
+                        
+                        return [
+                            ...prevMessages,
+                            {
+                                sender: message.senderId,
+                                message: { text: message.text },
+                                createdAt: message.createdAt,
+                                users: message.users,
+                            },
+                        ];
+                    });
                 } else {
                     // Incrementa el contador de mensajes no leídos si el chat no está abierto con el remitente
                     setUnreadMessages((prevUnread) => ({
@@ -148,20 +167,27 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
 
             <div className="p-4 bg-gray-900 mt-auto">
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setShowEmojis(!showEmojis)}
-                        className="p-2 bg-gray-700 text-white rounded hover:bg-gray-600"
-                    >
-                        😊
-                    </button>
-                    {showEmojis && (
-                        <div
-                            ref={emojiRef}
-                            className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10 bg-gray-200 p-2 rounded"
+                    <div className="relative">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowEmojis(!showEmojis);
+                            }}
+                            data-emoji-button="true"
+                            className="p-2 bg-gray-700 text-white rounded hover:bg-gray-600"
                         >
-                            <Picker data={data} onEmojiSelect={handleEmojiClick} />
-                        </div>
-                    )}
+                            😊
+                        </button>
+                        {showEmojis && (
+                            <div
+                                ref={emojiRef}
+                                className="absolute bottom-full mb-2 left-0 z-10 rounded shadow-lg"
+                                style={{ width: '320px' }}
+                            >
+                                <Picker data={data} onEmojiSelect={handleEmojiClick} />
+                            </div>
+                        )}
+                    </div>
                     <div className="flex-1 flex gap-2">
                         <input
                             type="text"

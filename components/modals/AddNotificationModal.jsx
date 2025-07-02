@@ -64,8 +64,8 @@ const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendR
           formattedFriend
         ]);
 
-        setFriendRequests(prevRequests => prevRequests.filter(req => req._id !== request._id));
-        setAcceptedRequests(prev => [...prev, request._id]);
+        setFriendRequests(prevRequests => prevRequests.filter(req => req.senderId !== request.sender._id));
+        setAcceptedRequests(prev => [...prev, request.sender._id]);
        
         if (socketRef.current) {
           socketRef.current.emit('acceptFriendRequest', {
@@ -104,7 +104,7 @@ const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendR
                   className="bg-green-500 text-white p-1 rounded"
                   onClick={() => handleAcceptRequest(request)}
                 >
-                  {acceptedRequests.includes(request._id) ? <FaCheck color="green" /> : 'Aceptar'}
+                  {acceptedRequests.includes(request.sender._id) ? <FaCheck color="white" /> : 'Aceptar'}
                 </button>
               </li>
             ))

@@ -69,7 +69,7 @@ const Sidebar = ({ userInfo, handleLogout, avatarMap}) => {
               {...avatarMap[avatar]}
             />
             {menuOpen && (
-              <div className="absolute bottom-12 left-0 bg-gray-700 text-white p-2 rounded shadow-lg">
+              <div className="absolute bottom-12 left-0 bg-blue-800 text-white p-2 rounded shadow-lg">
                 <span>{username}</span>
               </div>
             )}

@@ -182,22 +182,31 @@ function DashboardPage() {
 
   // useEffect para recibir solicitudes de amistad
   useEffect(() => {
+    const handleReceiveFriendRequest = ({ senderId, receiverId }) => {
+      if (receiverId === userId) {
+        console.log('Nueva solicitud de amistad de:', senderId);
+        setFriendRequests(prevRequests => {
+          // Evitar añadir duplicados
+          if (prevRequests.find(req => req.senderId === senderId)) {
+            return prevRequests;
+          }
+          const newRequests = [...prevRequests, { senderId }];
+          localStorage.setItem('friendRequests', JSON.stringify(newRequests));
+          return newRequests;
+        });
+      }
+    };
+
     if (socketRef.current) {
-      socketRef.current.on('receiveFriendRequest', ({ senderId, receiverId }) => {
-        if (receiverId === userId) {
-          console.log('Nueva solicitud de amistad de:', senderId);
-          setFriendRequests(prevRequests => [...prevRequests, { senderId }]);
-          localStorage.setItem('friendRequests', JSON.stringify([...friendRequests, { senderId }]));
-        }
-      });
+      socketRef.current.on('receiveFriendRequest', handleReceiveFriendRequest);
     }
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.off('receiveFriendRequest');
+        socketRef.current.off('receiveFriendRequest', handleReceiveFriendRequest);
       }
     };
-  }, [friendRequests, userId]);
+  }, [userId]);
 
 
   console.log('friendRequests', friendRequests);
@@ -250,7 +259,7 @@ function DashboardPage() {
       socketRef.current.disconnect();
     }
 
-    router.replace('/auth/login');
+    router.replace('/');
   }
 
 

@@ -6,7 +6,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: 'http://localhost:3000',
+        origin: 'http://localhost:3001',
         methods: ['GET', 'POST'],
         allowedHeaders: ['my-custom-header'],
         credentials: true,
@@ -20,7 +20,24 @@ io.on('connection', (socket) => {
 
     socket.on('registerUser', ({ userId, username, avatarId }) => {
         if (userId && username && avatarId) {
+            // Verificar si el usuario ya está conectado con otro socket
+            const existingUser = connectedUsers[userId];
+            if (existingUser && existingUser.socketId !== socket.id) {
+                // Desconectar el socket anterior del room específico del usuario
+                const oldSocketId = existingUser.socketId;
+                const oldSocket = io.sockets.sockets.get(oldSocketId);
+                if (oldSocket) {
+                    console.log(`Desconectando socket anterior ${oldSocketId} para el usuario ${userId}`);
+                    oldSocket.leave(`user:${userId}`);
+                }
+            }
+            
+            // Registrar el nuevo socket para este usuario
             connectedUsers[userId] = { userId, socketId: socket.id, username, avatarId, isConnected: true };
+            
+            // Unir este socket a un room específico para este usuario
+            socket.join(`user:${userId}`);
+            
             io.emit('updateUsers', Object.values(connectedUsers));
         }
     });
@@ -34,9 +51,9 @@ io.on('connection', (socket) => {
             // Crear el arreglo de usuarios
             const users = [senderId, receiverId].sort();
 
-            // Emitir el mensaje con el arreglo de usuarios
-            io.to(receiver.socketId).emit('receiveMessage', { senderId, text, createdAt, users });
-            console.log('Mensaje enviado a:', receiver.socketId);
+            // Emitir el mensaje al room específico del receptor en lugar de al socket específico
+            io.to(`user:${receiverId}`).emit('receiveMessage', { senderId, text, createdAt, users });
+            console.log('Mensaje enviado al usuario:', receiverId);
         } else {
             console.log('Receptor no encontrado para el mensaje:', messageData);
         }
@@ -45,8 +62,8 @@ io.on('connection', (socket) => {
     socket.on('friendRequestSent', ({ receiverId, senderId }) => {
         const receiver = connectedUsers[receiverId];
         if (receiver) {
-            io.to(receiver.socketId).emit('receiveFriendRequest', { senderId, receiverId });
-            console.log('Notificación de solicitud de amistad enviada a:', receiver.socketId);
+            io.to(`user:${receiverId}`).emit('receiveFriendRequest', { senderId, receiverId });
+            console.log('Notificación de solicitud de amistad enviada a:', receiverId);
         }
     });
 
@@ -55,8 +72,8 @@ io.on('connection', (socket) => {
 
         const sender = connectedUsers[senderId];
         if (sender) {
-            io.to(sender.socketId).emit('friendRequestAccepted', { receiverId });
-            console.log('Notificación de aceptación de amistad enviada a:', sender.socketId);
+            io.to(`user:${senderId}`).emit('friendRequestAccepted', { receiverId });
+            console.log('Notificación de aceptación de amistad enviada a:', senderId);
         }
     });
 

@@ -21,7 +21,6 @@ function LoginPage() {
     
             if (!data.message) throw new Error('Error durante el proceso, vuelva a intentarlo');
     
-            console.log(data.message);
             msgMostrar(data.message, 'success');
     
             localStorage.setItem('authToken', data.token);

@@ -81,14 +81,12 @@ function DashboardPage() {
       socketRef.current = io('http://localhost:4000', { reconnection: false });
 
       socketRef.current.on('connect', () => {
-        console.log('Conectado al servidor de Socket.io');
         if (userId && username && avatarId) {
           socketRef.current.emit('registerUser', { userId, username, avatarId });
         }
       });
 
       socketRef.current.on('receiveMessage', (message) => {
-        console.log('Mensaje recibido:', message);
 
         // Actualizar la lista de mensajes localmente
         setMessages((prevMessages) => [
@@ -111,7 +109,6 @@ function DashboardPage() {
       });
 
       socketRef.current.on('updateUsers', (users) => {
-        console.log('Usuarios conectados:', users);
         setConnectedUsers(users);
       });
     };
@@ -145,18 +142,16 @@ function DashboardPage() {
       const response = await asApi.get(`/friends?userId=${userId}&isVerified=true`);
       const confirmedFriends = response.data;
       setConfirmedFriends(confirmedFriends);
-      console.log('Amigos confirmados:', confirmedFriends);
     } catch (error) {
       console.error('Error al obtener amigos confirmados:', error);
     }
   };
 
   // GET para obtener todos los usuarios
-  const getUsers = async (userId) => {
-    const response = await asApi.get(`/users?id=${userId}`);
+  const getUsers = async () => {
+    const response = await asApi.get(`/users`);
     const data = response.data;
     setAllUsers(data);
-    console.log('users aaa', data);
   }
 
   // GET para obtener las solicitudes de amistad pendientes
@@ -165,7 +160,6 @@ function DashboardPage() {
       const response = await asApi.get(`/friends?receiverId=${userId}&isVerified=false`);
       const pendingRequests = response.data;
       setFriendRequests(pendingRequests);
-      console.log('Solicitudes de amistad pendientes:', pendingRequests);
     } catch (error) {
       console.error('Error al obtener solicitudes de amistad pendientes:', error);
     }
@@ -175,7 +169,7 @@ function DashboardPage() {
 
     if (userId) {
       getConfirmedFriends(userId);
-      getUsers(userId);
+      getUsers();
       getFriendRequests(userId);
     }
   }, [userId]);
@@ -183,27 +177,55 @@ function DashboardPage() {
   // useEffect para recibir solicitudes de amistad
   useEffect(() => {
     const handleReceiveFriendRequest = ({ senderId, receiverId }) => {
+      console.log('Evento receiveFriendRequest recibido:', { senderId, receiverId, userId });
+      
+      // Verificar explícitamente si este usuario es el receptor
       if (receiverId === userId) {
-        console.log('Nueva solicitud de amistad de:', senderId);
-        setFriendRequests(prevRequests => {
-          // Evitar añadir duplicados
-          if (prevRequests.find(req => req.senderId === senderId)) {
-            return prevRequests;
-          }
-          const newRequests = [...prevRequests, { senderId }];
-          localStorage.setItem('friendRequests', JSON.stringify(newRequests));
-          return newRequests;
+        console.log('Nueva solicitud de amistad de:', senderId, 'para:', userId);
+        
+        // Buscar el usuario en Allusers que coincida con senderId
+        const sender = Allusers.find(user => user._id === senderId);
+        console.log('Información del remitente encontrada:', sender);
+        
+        // Forzar una actualización inmediata de las solicitudes desde el servidor
+        getFriendRequests(userId).then(() => {
+          console.log('Solicitudes de amistad actualizadas después de recibir nueva solicitud');
         });
       }
     };
 
     if (socketRef.current) {
+      // Eliminar cualquier listener previo para evitar duplicados
+      socketRef.current.off('receiveFriendRequest');
+      // Añadir el nuevo listener
       socketRef.current.on('receiveFriendRequest', handleReceiveFriendRequest);
+      console.log('Listener para receiveFriendRequest configurado');
     }
 
     return () => {
       if (socketRef.current) {
         socketRef.current.off('receiveFriendRequest', handleReceiveFriendRequest);
+      }
+    };
+  }, [userId, Allusers, socketRef]);
+
+  // useEffect para manejar la aceptación de una solicitud de amistad que enviaste
+  useEffect(() => {
+    const handleFriendRequestAccepted = ({ receiverId }) => {
+      console.log(`Tu solicitud de amistad a ${receiverId} fue aceptada.`);
+      // Vuelve a cargar la lista de amigos confirmados
+      getConfirmedFriends(userId);
+      // Opcional: Vuelve a cargar las solicitudes para limpiar la UI si es necesario
+      getFriendRequests(userId);
+    };
+
+    if (socketRef.current) {
+      socketRef.current.on('friendRequestAccepted', handleFriendRequestAccepted);
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('friendRequestAccepted', handleFriendRequestAccepted);
       }
     };
   }, [userId]);
@@ -247,6 +269,43 @@ function DashboardPage() {
     };
   }, [socketRef, userId, Allusers]);
 
+
+  // useEffect para manejar actualizaciones de solicitudes de amistad (evento global)
+  useEffect(() => {
+    const handleFriendRequestUpdated = ({ receiverId }) => {
+      console.log('Evento friendRequestUpdated recibido:', { receiverId });
+      
+      // Si el usuario actual es el receptor de la solicitud, actualizar la lista de solicitudes
+      if (userId === receiverId) {
+        console.log('Actualizando solicitudes de amistad para el usuario:', userId);
+        
+        // Recargar las solicitudes de amistad
+        getFriendRequests(userId).then(() => {
+          console.log('Solicitudes de amistad actualizadas correctamente');
+          
+          // Forzar una actualización de la UI
+          const sidebar = document.querySelector('.sidebar');
+          if (sidebar) {
+            // Pequeño hack para forzar un reflow y actualizar la UI
+            sidebar.style.opacity = '0.99';
+            setTimeout(() => {
+              sidebar.style.opacity = '1';
+            }, 10);
+          }
+        });
+      }
+    };
+
+    if (socketRef.current) {
+      socketRef.current.on('friendRequestUpdated', handleFriendRequestUpdated);
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('friendRequestUpdated', handleFriendRequestUpdated);
+      }
+    };
+  }, [userId]);
 
   // funcion para cerrar la sesion
   const handleLogout = () => {
@@ -304,7 +363,6 @@ function DashboardPage() {
       const response = await asApi.get(`/chat?userId=${userId}`);
       if (response.status === 200) {
         setMessages(response.data);
-        console.log('Mensajes recibidos:', response.data);
       } else {
         console.error('Error al obtener mensajes:', response.statusText);
       }
@@ -345,25 +403,25 @@ function DashboardPage() {
   }, [messages]);
 
 
-  useEffect(() => {
-    console.log("Monitoreando a friendRequests", friendRequests);
-    console.log("Monitoreando a confirmedFriends", confirmedFriends);
-    console.log("Monitoreando a  allUsers", Allusers);
-  }, [friendRequests, confirmedFriends, Allusers]);
+  // useEffect(() => {
+  //   console.log("Monitoreando a friendRequests", friendRequests);
+  //   console.log("Monitoreando a confirmedFriends", confirmedFriends);
+  //   console.log("Monitoreando a  allUsers", Allusers);
+  // }, [friendRequests, confirmedFriends, Allusers]);
 
-  useEffect(() => {
-    console.log("Monitoreando a connectedUsers", connectedUsers);
-  }, [connectedUsers]);
-  useEffect(() => {
-    console.log("Monitoreando a friendsWithStatus", friendsWithStatus);
-  }, [friendsWithStatus]);
+  // useEffect(() => {
+  //   console.log("Monitoreando a connectedUsers", connectedUsers);
+  // }, [connectedUsers]);
+  // useEffect(() => {
+  //   console.log("Monitoreando a friendsWithStatus", friendsWithStatus);
+  // }, [friendsWithStatus]);
 
-  useEffect(() => {
-    console.log("Monitoreando a unreadMessages", unreadMessages);
-    console.log("Monitoreando a isChatOpen", isChatOpen);
-    console.log("Monitoreando a messages", messages);
-    console.log("Monitoreando a lastMessages", lastMessages);
-  }, [unreadMessages, isChatOpen, messages, lastMessages]);
+  // useEffect(() => {
+  //   console.log("Monitoreando a unreadMessages", unreadMessages);
+  //   console.log("Monitoreando a isChatOpen", isChatOpen);
+  //   console.log("Monitoreando a messages", messages);
+  //   console.log("Monitoreando a lastMessages", lastMessages);
+  // }, [unreadMessages, isChatOpen, messages, lastMessages]);
 
 
 

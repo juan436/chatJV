@@ -19,7 +19,6 @@ function ForgotPasswordPage() {
 
             if (!data.message) throw new Error('Error durante el proceso, vuelva a intentarlo');
 
-            console.log(data.message);
             msgMostrar(data.message, 'success');
         } catch (error) {
             const errorMessage = error.response?.data?.message || error.message || 'Error durante el proceso, vuelva a intentarlo';

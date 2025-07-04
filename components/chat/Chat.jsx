@@ -29,7 +29,6 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
             socketRef.current.off('receiveMessage');
             
             const handleReceiveMessage = (message) => {
-                console.log('Mensaje recibido:', message);
 
                 // Verifica si el mensaje pertenece a la conversación actual
                 if (message.users.includes(selectedUser._id)) {
@@ -98,8 +97,6 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                 users: users,
             };
 
-            console.log('Enviando mensaje:', messageData);
-
             if (socketRef.current) {
                 socketRef.current.emit('sendMessage', messageData);
             }
@@ -112,7 +109,6 @@ const Chat = ({ selectedUser, setSelectedUser, messages, setMessages, userId, so
                     text: newMessage,
                     users: users,
                 });
-                console.log('Respuesta de la API:', response);
             } catch (error) {
                 console.error('Error al guardar el mensaje:', error);
             }

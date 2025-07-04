@@ -9,8 +9,6 @@ const AddContactModal = ({ isOpen, userId, Allusers, onClose, avatarMap, socketR
   const [selectedUser, setSelectedUser] = useState(null);
   const modalRef = useRef(null);
 
-  console.log('Allusers para agregar contacto', Allusers);
-
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -41,7 +39,6 @@ const AddContactModal = ({ isOpen, userId, Allusers, onClose, avatarMap, socketR
   };
 
   const sendFriendRequest = async (receiverId) => {
-    console.log('Enviando solicitud de amistad a:', receiverId);
     try {
       const response = await asApi.post('/friends', {
         senderId: userId,
@@ -49,7 +46,6 @@ const AddContactModal = ({ isOpen, userId, Allusers, onClose, avatarMap, socketR
       });
 
       if (response.status === 201) {
-        console.log('Solicitud de amistad enviada:', response.data);
         setSuccessMessage('Solicitud enviada');
         setTimeout(() => setSuccessMessage(''), 3000);
         if (socketRef.current) {
@@ -66,7 +62,6 @@ const AddContactModal = ({ isOpen, userId, Allusers, onClose, avatarMap, socketR
   const handleSubmit = (e) => {
     e.preventDefault();
     if (selectedUser) {
-      console.log('Usuario seleccionado para enviar solicitud:', selectedUser);
       sendFriendRequest(selectedUser._id);
       setSelectedUser(null);
     } else {

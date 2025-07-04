@@ -8,7 +8,6 @@ const Sidebar = ({ userInfo, handleLogout, avatarMap}) => {
 
   const { avatar, userId, username, socketRef, friendRequests, setFriendRequests,  Allusers, setConfirmedFriends} = userInfo;
 
-  console.log('avatar', avatar);
   const [selected, setSelected] = useState('chats');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -32,7 +31,6 @@ const Sidebar = ({ userInfo, handleLogout, avatarMap}) => {
     };
   }, []);
 
-  console.log('friendRequests en sidebar', friendRequests);
   return (
     <div className="flex flex-col justify-between items-center p-0 bg-gray-900 h-screen w-16">
       <div className="flex flex-col items-center w-full mt-10">

@@ -6,7 +6,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: 'http://localhost:3001',
+        origin: 'http://localhost:3000',
         methods: ['GET', 'POST'],
         allowedHeaders: ['my-custom-header'],
         credentials: true,
@@ -14,32 +14,69 @@ const io = new Server(httpServer, {
 });
 
 const connectedUsers = {};
+const pendingAccepts = new Set(); // Para evitar aceptaciones duplicadas
 
 io.on('connection', (socket) => {
     console.log('Usuario conectado', socket.id);
 
     socket.on('registerUser', ({ userId, username, avatarId }) => {
         if (userId && username && avatarId) {
-            // Verificar si el usuario ya está conectado con otro socket
+            // Verificar si el usuario ya está conectado
             const existingUser = connectedUsers[userId];
+
             if (existingUser && existingUser.socketId !== socket.id) {
-                // Desconectar el socket anterior del room específico del usuario
-                const oldSocketId = existingUser.socketId;
-                const oldSocket = io.sockets.sockets.get(oldSocketId);
+                // Desconectar el socket anterior
+                const oldSocket = io.sockets.sockets.get(existingUser.socketId);
                 if (oldSocket) {
-                    console.log(`Desconectando socket anterior ${oldSocketId} para el usuario ${userId}`);
                     oldSocket.leave(`user:${userId}`);
+                    oldSocket.disconnect(true);
                 }
             }
-            
-            // Registrar el nuevo socket para este usuario
-            connectedUsers[userId] = { userId, socketId: socket.id, username, avatarId, isConnected: true };
-            
-            // Unir este socket a un room específico para este usuario
+
+            // Registrar el nuevo socket
+            connectedUsers[userId] = {
+                userId,
+                socketId: socket.id,
+                username,
+                avatarId,
+                isConnected: true
+            };
+
+            // Unir al room correcto
             socket.join(`user:${userId}`);
-            
+            console.log(`Usuario ${userId} unido a la sala user:${userId}`);
+            console.log('Usuarios conectados:', Object.values(connectedUsers));
+            console.log('Socket ID:', socket.id);
+            console.log("room", socket.rooms);
+
             io.emit('updateUsers', Object.values(connectedUsers));
         }
+    });
+
+    socket.on('acceptFriendRequest', ({ senderId, receiverId }) => {
+        const requestKey = `${senderId}-${receiverId}`;
+        if (pendingAccepts.has(requestKey)) {
+            console.log('Solicitud ya en proceso:', requestKey);
+            return;
+        }
+        pendingAccepts.add(requestKey);
+
+        console.log(`Evento acceptFriendRequest recibido: senderId=${senderId}, receiverId=${receiverId}`);
+
+        const sender = connectedUsers[senderId];
+        if (sender) {
+            io.to(`user:${senderId}`).emit('friendRequestAccepted', { 
+                receiverId,
+                // Añadimos un timestamp para asegurar que cada evento sea único si es necesario
+                timestamp: Date.now()
+            });
+            console.log('Notificación de aceptación de amistad enviada a:', senderId);
+        }
+
+        // Limpiamos el set después de un momento para permitir nuevas interacciones si fueran necesarias
+        setTimeout(() => {
+            pendingAccepts.delete(requestKey);
+        }, 5000); // 5 segundos de cooldown
     });
 
     socket.on('sendMessage', (messageData) => {
@@ -60,26 +97,17 @@ io.on('connection', (socket) => {
     });
 
     socket.on('friendRequestSent', ({ receiverId, senderId }) => {
-        const receiver = connectedUsers[receiverId];
-        if (receiver) {
-            io.to(`user:${receiverId}`).emit('receiveFriendRequest', { senderId, receiverId });
-            console.log('Notificación de solicitud de amistad enviada a:', receiverId);
-        }
-    });
+        console.log(`Intentando enviar notificación a ${receiverId} desde ${senderId}`);
+        // Emitir a la sala específica del usuario
+        io.to(`user:${receiverId}`).emit('receiveFriendRequest', { senderId, receiverId });
+        console.log('Notificación de solicitud de amistad enviada a:', receiverId);
 
-    socket.on('acceptFriendRequest', ({ senderId, receiverId }) => {
-        console.log(`Evento acceptFriendRequest recibido: senderId=${senderId}, receiverId=${receiverId}`);
-
-        const sender = connectedUsers[senderId];
-        if (sender) {
-            io.to(`user:${senderId}`).emit('friendRequestAccepted', { receiverId });
-            console.log('Notificación de aceptación de amistad enviada a:', senderId);
-        }
+        // Emitir evento global para sincronización
+        io.emit('friendRequestUpdated', { receiverId });
     });
 
     socket.on('logout', ({ userId }) => {
-        console.log('Usuario desconectado:', userId);
-        if (connectedUsers[userId]) {
+        if (userId && connectedUsers[userId]) {
             connectedUsers[userId].isConnected = false;
             io.emit('updateUsers', Object.values(connectedUsers));
         }

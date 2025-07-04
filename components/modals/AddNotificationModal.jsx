@@ -4,8 +4,6 @@ import { asApi } from '@/apiAxios';
 import { FaCheck } from 'react-icons/fa';
 
 const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendRequests, Allusers, userId, setConfirmedFriends, socketRef }) => {
-  console.log('requests en modal', requests);
-  console.log('Allusers en modal', Allusers);
   const modalRef = useRef(null);
   const [acceptedRequests, setAcceptedRequests] = useState([]);
 
@@ -39,6 +37,13 @@ const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendR
 
   const handleAcceptRequest = async (request) => {
     console.log('request en handleAcceptRequest', request);
+
+    // Prevenir multiples clicks si la solicitud ya fue aceptada
+    if (acceptedRequests.includes(request.sender._id)) {
+      console.log('Solicitud ya aceptada.');
+      return;
+    }
+
     try {
       console.log('Enviando solicitud para aceptar:', request);
       const response = await asApi.patch('/friends', {
@@ -47,26 +52,15 @@ const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendR
       });
 
       if (response.status === 200) {
-        const updatedFriend = response.data;
-        console.log('Solicitud aceptada:', updatedFriend);
-
-        // Formatear la información del amigo confirmado
-        const formattedFriend = {
-          _id: request.sender._id,
-          username: request.sender.username,
-          avatar: request.sender.avatar,
-        };
-
-        console.log('formattedFriend', formattedFriend);
-        // Agregar el amigo confirmado al estado
-        setConfirmedFriends(prevFriends => [
-          ...prevFriends,
-          formattedFriend
-        ]);
-
-        setFriendRequests(prevRequests => prevRequests.filter(req => req.senderId !== request.sender._id));
+        console.log('Solicitud de amistad aceptada con éxito');
         setAcceptedRequests(prev => [...prev, request.sender._id]);
-       
+
+        // Eliminar la solicitud de la lista de notificaciones
+        setFriendRequests(prevRequests => 
+          prevRequests.filter(req => req.senderId !== request.sender._id)
+        );
+
+        // Notificar al servidor que la solicitud fue aceptada
         if (socketRef.current) {
           socketRef.current.emit('acceptFriendRequest', {
             senderId: request.sender._id,
@@ -91,22 +85,22 @@ const AddNotificationModal = ({ isOpen, onClose, requests, avatarMap, setFriendR
         <ul className="bg-gray-800 border border-gray-600 rounded mt-2">
           {formattedRequests.length > 0 ? (
             formattedRequests.map((request, index) => (
-              <li key={index} className="p-2 hover:bg-gray-600 cursor-pointer text-white flex justify-between items-center">
+              <div key={request.sender?._id || index} className="flex items-center justify-between p-2 hover:bg-gray-700 rounded">
                 <div className="flex items-center">
                   <Avatar
                     style={{ width: '30px', height: '30px', marginRight: '10px' }}
                     avatarStyle='Circle'
                     {...(avatarMap[request.sender?.avatar] || {})}
                   />
-                  <span>{request.sender?.username || 'Usuario desconocido'}</span>
+                  <p className="text-white">{request.sender?.username || 'Usuario desconocido'}</p>
                 </div>
-                <button
-                  className="bg-green-500 text-white p-1 rounded"
+                <button 
                   onClick={() => handleAcceptRequest(request)}
-                >
-                  {acceptedRequests.includes(request.sender._id) ? <FaCheck color="white" /> : 'Aceptar'}
+                  disabled={acceptedRequests.includes(request.sender?._id)} // Deshabilitar si ya fue aceptada
+                  className={`p-1 rounded-full text-white ${acceptedRequests.includes(request.sender?._id) ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'}`}>
+                  <FaCheck />
                 </button>
-              </li>
+              </div>
             ))
           ) : (
             <li className="p-2 text-white">No hay solicitudes pendientes</li>

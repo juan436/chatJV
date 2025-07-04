@@ -17,7 +17,6 @@ const SelectAvatar = () => {
         const id = searchParams.get('userId');
         if (id) {
             setUserId(id);
-            console.log('User ID:', id);
         } else {
             console.error('User ID no encontrado');
         }
@@ -43,7 +42,6 @@ const SelectAvatar = () => {
     
         try {
             const response = await asApi.post('/auth/select-avatar', { userId, avatarId: avatar.id });
-            console.log('Avatar actualizado:', response.data.message);
             setSuccess(true);
             setTimeout(() => {
                 router.replace('/');

@@ -11,7 +11,6 @@ let isConnected = false;
 
 export const connect = async () => {
     if (isConnected) {
-        console.log('Ya estábamos conectados');
         return;
     }
 

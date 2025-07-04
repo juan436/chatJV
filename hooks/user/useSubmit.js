@@ -7,10 +7,7 @@ const useSubmit = (reset) => {
     const router = useRouter();
 
     const onSubmit = async (form) => {
-        console.log('Formulario enviado:', form);
-
         if (form.password !== form.confirmarPassword) {
-            console.error('Las contraseñas no coinciden');
             msgMostrar('Las contraseñas no coinciden', 'error');
             return;
         }
@@ -22,14 +19,11 @@ const useSubmit = (reset) => {
 
             if (!data.message || !data.userId) throw new Error('Error durante el proceso, vuelva a intentarlo');
 
-            console.log(data.message);
             msgMostrar(data.message, 'success');
             reset();
-            console.log("data.userId", data.userId)
             router.push(`/auth/select-avatar?userId=${data.userId}`);
         } catch (error) {
             const errorMessage = error.response?.data?.message || error.message || 'Error durante el proceso, vuelva a intentarlo';
-            console.error('Error en la solicitud:', errorMessage);
             msgMostrar('Error en la solicitud: ' + errorMessage, 'error');
         }
     };

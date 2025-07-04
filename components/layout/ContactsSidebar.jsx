@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import Avatar from 'avataaars';
 
 const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages, unreadMessages, isChatOpen }) => {
-  console.log('unreadMessages aaa', unreadMessages);
-  console.log('contacts aaa', contacts);
-  console.log('lastMessages aaa', lastMessages);
-
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredContacts = contacts.filter(contact =>
     contact.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Eliminar duplicados antes de renderizar para evitar errores de keys
+  const uniqueContacts = filteredContacts.filter((contact, index, self) =>
+    index === self.findIndex(c => c._id === contact._id)
   );
 
   const truncateText = (text, maxLength) => {
@@ -26,7 +27,7 @@ const ContactsSidebar = ({ contacts, handleUserSelect, avatarMap, lastMessages, 
         onChange={(e) => setSearchTerm(e.target.value)}
       />
       <div className="flex flex-col overflow-y-auto">
-        {filteredContacts.map(contact => {
+        {uniqueContacts.map(contact => {
           const avatarData = avatarMap[contact.avatar];
           const lastMessage = lastMessages.find(msg => msg.users.includes(contact._id));
           const lastMessageText = lastMessage ? truncateText(lastMessage.message.text, 20) : 'No hay mensajes';
